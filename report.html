@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Attendance Tracker · Reports & Printing</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* ---------- GLOBAL ---------- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      background: #f4f7fc;
+      color: #1e293b;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+    /* ---------- SIDEBAR ---------- */
+    .sidebar {
+      width: 260px;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      padding: 1.8rem 1rem;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 20;
+    }
+    .sidebar h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #0f3b5e;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      padding-left: 0.5rem;
+    }
+    .sidebar h1 i { color: #2a7faa; font-size: 1.6rem; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.8rem 1rem;
+      border-radius: 10px;
+      color: #475569;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 0.3rem;
+      transition: background 0.15s, color 0.15s;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+    .nav-item i { width: 20px; color: #5b8db8; }
+    .nav-item.active { background: #e6f0f9; color: #0b3b5c; font-weight: 600; }
+    .nav-item.active i { color: #1e6f9f; }
+    .nav-item:hover:not(.active) { background: #f1f5f9; }
+    .sync-status {
+      margin-top: auto;
+      font-size: 0.8rem;
+      padding: 1rem 0.8rem;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #3b5e7e;
+      word-break: break-word;
+    }
+    .sync-online { color: #0a7e4e; }
+    .sync-offline { color: #b45309; }
+    .sync-error { color: #b91c1c; }
+    .sync-pending { color: #b45309; }
+
+    /* ---------- MAIN ---------- */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.8rem 2rem;
+      height: 100vh;
+      background: #f4f7fc;
+    }
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #0f3b5e;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.01em;
+    }
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #1e4a6b;
+      margin-bottom: 1rem;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 1.5rem;
+      box-shadow: 0 6px 18px rgba(0, 20, 40, 0.04);
+      border: 1px solid #e9eef3;
+      margin-bottom: 1.5rem;
+    }
+    .btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: #1e293b;
+      cursor: pointer;
+      transition: 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      text-decoration: none;
+    }
+    .btn i { font-size: 0.9rem; }
+    .btn:hover { background: #f8fafc; border-color: #94a3b8; }
+    .btn-primary { background: #1e6f9f; border-color: #1e6f9f; color: white; }
+    .btn-primary:hover { background: #155a82; border-color: #155a82; }
+    .btn-success { background: #dcfce7; border-color: #bbf7d0; color: #0a7e4e; }
+    .btn-success:hover { background: #bbf7d0; }
+    .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
+    .flex-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; }
+    .flex-between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.8rem; }
+    input, select {
+      padding: 0.7rem 0.9rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background: white;
+      transition: 0.1s;
+      width: 100%;
+    }
+    input:focus, select:focus { outline: 2px solid #7fb4d4; border-color: transparent; }
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; }
+    .form-group label { font-size: 0.85rem; font-weight: 500; color: #334155; }
+    .text-muted { color: #64748b; }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-present { background: #dcfce7; color: #0a7e4e; }
+    .badge-absent { background: #fee2e2; color: #b91c1c; }
+    .badge-unmarked { background: #f1f5f9; color: #64748b; }
+    .badge-info { background: #e0f2fe; color: #0369a1; }
+
+    /* ---------- REPORT TYPE TABS ---------- */
+    .report-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1.2rem;
+      background: #f1f5f9;
+      padding: 0.3rem;
+      border-radius: 12px;
+    }
+    .report-tab {
+      flex: 1 1 auto;
+      min-width: 120px;
+      padding: 0.6rem 0.8rem;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #475569;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: 0.15s;
+    }
+    .report-tab:hover { background: #e2e8f0; }
+    .report-tab.active { background: white; color: #0f3b5e; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .report-tab i { font-size: 0.8rem; }
+
+    /* ---------- FILTER PANEL ---------- */
+    .report-config {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.8rem;
+      align-items: end;
+    }
+    .report-config .form-group { margin-bottom: 0; }
+    .report-config .config-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* ---------- REPORT PREVIEW ---------- */
+    .report-preview-wrap {
+      background: #e8eef5;
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-top: 1.2rem;
+      overflow-x: auto;
+    }
+    .report-preview {
+      background: #ffffff;
+      width: 210mm;
+      max-width: 100%;
+      min-height: 200px;
+      margin: 0 auto;
+      padding: 18mm 14mm;
+      box-shadow: 0 6px 24px rgba(0, 20, 40, 0.12);
+      border-radius: 4px;
+      color: #1e293b;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .report-preview .rpt-header {
+      text-align: center;
+      border-bottom: 2px solid #1e4a6b;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+    .report-preview .rpt-school {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f3b5e;
+      letter-spacing: 0.02em;
+    }
+    .report-preview .rpt-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e4a6b;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .report-preview .rpt-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 22px;
+      font-size: 11px;
+      color: #475569;
+      margin-bottom: 14px;
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .report-preview .rpt-meta span strong { color: #0f3b5e; }
+    .report-preview table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      margin-bottom: 14px;
+    }
+    .report-preview th {
+      background: #eef4f9;
+      color: #1e4a6b;
+      font-weight: 600;
+      text-align: left;
+      padding: 7px 6px;
+      border: 1px solid #cdd9e5;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .report-preview td {
+      padding: 6px;
+      border: 1px solid #dde5ee;
+      vertical-align: top;
+    }
+    .report-preview tr:nth-child(even) td { background: #fafcfe; }
+    .report-preview .rpt-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 24px;
+      padding: 10px 12px;
+      background: #f1f6fa;
+      border: 1px solid #d9e2ec;
+      border-radius: 6px;
+      font-size: 11.5px;
+      margin-bottom: 16px;
+    }
+    .report-preview .rpt-summary strong { color: #0f3b5e; font-size: 13px; }
+    .report-preview .rpt-signatures {
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
+      margin-top: 36px;
+      padding-top: 10px;
+    }
+    .report-preview .rpt-sig-block {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      color: #475569;
+    }
+    .report-preview .rpt-sig-line {
+      border-top: 1px solid #64748b;
+      margin-top: 34px;
+      padding-top: 5px;
+    }
+    .report-preview .rpt-footer {
+      margin-top: 18px;
+      padding-top: 8px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 9.5px;
+      color: #94a3b8;
+      text-align: center;
+    }
+    .report-preview .status-p { color: #0a7e4e; font-weight: 600; }
+    .report-preview .status-a { color: #b91c1c; font-weight: 600; }
+    .report-preview .status-u { color: #64748b; font-style: italic; }
+    .report-preview .col-total { text-align: center; font-weight: 600; }
+
+    .report-empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #64748b;
+    }
+    .report-empty i { font-size: 2.5rem; color: #b8c9d9; margin-bottom: 0.8rem; display: block; }
+
+    /* ---------- PRINT ---------- */
+    @media print {
+      @page {
+        size: A4;
+        margin: 12mm;
+      }
+      body {
+        display: block;
+        height: auto;
+        overflow: visible;
+        background: white;
+      }
+      .sidebar, .mobile-nav, .no-print, .report-tabs, .report-config, .card h3,
+      .report-preview-wrap > .flex-between, #printActions {
+        display: none !important;
+      }
+      .main-content {
+        padding: 0;
+        height: auto;
+        overflow: visible;
+        background: white;
+      }
+      h2 { display: none; }
+      .card { box-shadow: none; border: none; padding: 0; margin: 0; border-radius: 0; }
+      .report-preview-wrap {
+        background: white;
+        padding: 0;
+        border-radius: 0;
+        overflow: visible;
+        margin: 0;
+      }
+      .report-preview {
+        width: 100%;
+        max-width: 100%;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0;
+        font-size: 11px;
+      }
+      .report-preview table { page-break-inside: auto; }
+      .report-preview tr { page-break-inside: avoid; page-break-after: auto; }
+      .report-preview thead { display: table-header-group; }
+      .report-preview .rpt-signatures { page-break-inside: avoid; }
+    }
+
+    /* ---------- MOBILE NAV ---------- */
+    .mobile-nav {
+      display: none;
+      background: white;
+      border-top: 1px solid #e2e8f0;
+      position: fixed;
+      bottom: 0; left: 0; width: 100%;
+      z-index: 30;
+      padding: 0.5rem 0.3rem;
+      justify-content: space-around;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
+    }
+    .mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.65rem;
+      color: #64748b;
+      padding: 0.3rem 0.2rem;
+      border-radius: 12px;
+      gap: 0.2rem;
+      text-decoration: none;
+    }
+    .mobile-nav-item i { font-size: 1.2rem; }
+    .mobile-nav-item.active { color: #1e6f9f; font-weight: 600; }
+
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f3b5e;
+      color: white;
+      padding: 0.7rem 1.4rem;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+      box-shadow: 0 8px 24px rgba(0, 20, 40, 0.2);
+      text-align: center;
+      max-width: 90vw;
+    }
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main-content { padding: 1.2rem 1rem 5rem 1rem; }
+      .mobile-nav { display: flex; }
+      h2 { font-size: 1.5rem; }
+      .report-preview { padding: 12mm 8mm; font-size: 10px; }
+      .report-tab { min-width: 100px; font-size: 0.78rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR (links) -->
+<aside class="sidebar">
+  <h1><i class="fas fa-clipboard-check"></i> AttendTrack</h1>
+  <a class="nav-item" href="home.html" data-page="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a class="nav-item" href="classes.html" data-page="classes"><i class="fas fa-school"></i> Classes</a>
+  <a class="nav-item" href="attendance.html" data-page="takeAttendance"><i class="fas fa-user-check"></i> Take Attendance</a>
+  <a class="nav-item" href="record.html" data-page="records"><i class="fas fa-table"></i> Records</a>
+  <a class="nav-item active" href="#" data-page="reports"><i class="fas fa-file-alt"></i> Reports</a>
+  
+  <div class="sync-status" id="syncStatusSidebar">
+    <i class="fas fa-circle-notch fa-spin"></i> <span>Connecting…</span>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+
+  <section id="page-reports">
+    <h2>Reports & Printing</h2>
+
+    <!-- REPORT CONFIG -->
+    <div class="card no-print">
+      <!-- Tabs -->
+      <div class="report-tabs" id="reportTabs">
+        <button class="report-tab active" data-report="daily"><i class="fas fa-calendar-day"></i> Daily</button>
+        <button class="report-tab" data-report="weekly"><i class="fas fa-calendar-week"></i> Weekly</button>
+        <button class="report-tab" data-report="monthly"><i class="fas fa-calendar-alt"></i> Monthly</button>
+        <button class="report-tab" data-report="custom"><i class="fas fa-calendar-range"></i> Custom Range</button>
+        <button class="report-tab" data-report="student"><i class="fas fa-user-graduate"></i> Student</button>
+        <button class="report-tab" data-report="summary"><i class="fas fa-chart-bar"></i> Class Summary</button>
+      </div>
+
+      <!-- Config fields (shown/hidden per report type) -->
+      <div class="report-config" id="reportConfig">
+        <div class="form-group" id="cfgClassGroup">
+          <label for="cfgClass">Class</label>
+          <select id="cfgClass"><option value="">— Select class —</option></select>
+        </div>
+
+        <div class="form-group" id="cfgStudentGroup" style="display:none;">
+          <label for="cfgStudent">Student</label>
+          <select id="cfgStudent"><option value="">— Select student —</option></select>
+        </div>
+
+        <div class="form-group" id="cfgDateGroup">
+          <label for="cfgDate">Date</label>
+          <input type="date" id="cfgDate">
+        </div>
+
+        <div class="form-group" id="cfgDateFromGroup" style="display:none;">
+          <label for="cfgDateFrom">From</label>
+          <input type="date" id="cfgDateFrom">
+        </div>
+
+        <div class="form-group" id="cfgDateToGroup" style="display:none;">
+          <label for="cfgDateTo">To</label>
+          <input type="date" id="cfgDateTo">
+        </div>
+
+        <div class="form-group" id="cfgMonthGroup" style="display:none;">
+          <label for="cfgMonth">Month</label>
+          <input type="month" id="cfgMonth">
+        </div>
+
+        <div class="config-actions" id="cfgActions">
+          <button class="btn btn-primary" id="generateReportBtn"><i class="fas fa-eye"></i> Generate</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT PREVIEW -->
+    <div class="card" style="padding:0; background:transparent; box-shadow:none; border:none;">
+      <div class="flex-between no-print" style="margin-bottom:1rem;" id="printActions" >
+        <h3 style="margin-bottom:0;"><i class="fas fa-file-invoice"></i> Preview</h3>
+        <div class="flex-row">
+          <button class="btn btn-success" id="printBtn"><i class="fas fa-print"></i> Print / Save as PDF</button>
+        </div>
+      </div>
+
+      <div class="report-preview-wrap">
+        <div class="report-preview" id="reportPreview">
+          <div class="report-empty">
+            <i class="fas fa-file-alt"></i>
+            <p>Choose a report type and press <strong>Generate</strong> to see the preview here.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- MOBILE NAV (links) -->
+<nav class="mobile-nav">
+  <a class="mobile-nav-item" href="home.html" data-page="dashboard"><i class="fas fa-chart-pie"></i> Home</a>
+  <a class="mobile-nav-item" href="classes.html" data-page="classes"><i class="fas fa-school"></i> Classes</a>
+  <a class="mobile-nav-item" href="attendance.html" data-page="takeAttendance"><i class="fas fa-user-check"></i> Attend</a>
+  <a class="mobile-nav-item" href="record.html" data-page="records"><i class="fas fa-table"></i> Records</a>
+  <a class="mobile-nav-item active" href="#" data-page="reports"><i class="fas fa-file-alt"></i> Reports</a>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  // ============================================================
+  // FIREBASE
+  // ============================================================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import {
+    getDatabase, ref, set, onValue, get, remove
+  } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBV4mq7IO9ubmW6m1RIvbNRa1g9IVr25k8",
+    authDomain: "attendance-taker-ee32b.firebaseapp.com",
+    databaseURL: "https://attendance-taker-ee32b-default-rtdb.firebaseio.com",
+    projectId: "attendance-taker-ee32b",
+    storageBucket: "attendance-taker-ee32b.firebasestorage.app",
+    messagingSenderId: "22851789508",
+    appId: "1:22851789508:web:d2a3e773eb3a29b5385f91",
+    measurementId: "G-0P6QWMLB2G"
+  };
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  const state = {
+    classes: {},              // classId -> { name, grade, section, academicYear, students: { sid: { rollNumber, fullName, extra } } }
+    attendance: {},           // classId -> date -> sid -> { status, timestamp }
+    schoolName: 'My School',
+    reportType: 'daily',
+    pendingQueue: [],
+    syncStatus: 'connecting',
+    lastReport: null          // { html, title, generatedAt }
+  };
+
+  const LS_CLASSES = 'attendanceTracker_classes';
+  const LS_ATTENDANCE = 'attendanceTracker_attendance';
+  const LS_SETTINGS = 'attendanceTracker_settings';
+  const LS_QUEUE = 'attendanceTracker_queue';
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+  }
+
+  function genId(prefix) {
+    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function todayISO() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function formatDatePretty(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    const dt = new Date(Number(y), Number(m) - 1, Number(d));
+    return dt.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function formatMonthPretty(ym) {
+    if (!ym) return '';
+    const [y, m] = ym.split('-');
+    const dt = new Date(Number(y), Number(m) - 1, 1);
+    return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+  }
+
+  function getWeekRange(dateISO) {
+    const [y, m, d] = dateISO.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    const day = dt.getDay(); // 0 Sun .. 6 Sat
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const start = new Date(dt);
+    start.setDate(dt.getDate() + mondayOffset);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return {
+      from: start.toISOString().slice(0, 10),
+      to: end.toISOString().slice(0, 10)
+    };
+  }
+
+  function getMonthRange(ym) {
+    const [y, m] = ym.split('-').map(Number);
+    const start = new Date(y, m - 1, 1);
+    const end = new Date(y, m, 0);
+    return {
+      from: start.toISOString().slice(0, 10),
+      to: end.toISOString().slice(0, 10)
+    };
+  }
+
+  function dateInRange(dateISO, from, to) {
+    if (from && dateISO < from) return false;
+    if (to && dateISO > to) return false;
+    return true;
+  }
+
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // ============================================================
+  // LOCAL STORAGE + SYNC
+  // ============================================================
+  function loadLocal() {
+    try {
+      const c = localStorage.getItem(LS_CLASSES);
+      if (c) state.classes = JSON.parse(c);
+      const a = localStorage.getItem(LS_ATTENDANCE);
+      if (a) state.attendance = JSON.parse(a);
+      const s = localStorage.getItem(LS_SETTINGS);
+      if (s) {
+        const parsed = JSON.parse(s);
+        state.schoolName = parsed.schoolName || 'My School';
+      }
+      const q = localStorage.getItem(LS_QUEUE);
+      if (q) state.pendingQueue = JSON.parse(q);
+    } catch (e) { console.warn('Local parse error', e); }
+  }
+
+  function saveLocal() {
+    localStorage.setItem(LS_CLASSES, JSON.stringify(state.classes));
+    localStorage.setItem(LS_ATTENDANCE, JSON.stringify(state.attendance));
+    localStorage.setItem(LS_QUEUE, JSON.stringify(state.pendingQueue));
+  }
+
+  function addToQueue(path, data, action = 'set') {
+    state.pendingQueue.push({ id: genId('q'), path, data, action, timestamp: Date.now() });
+    saveLocal();
+    updateSyncStatus('pending');
+    attemptSync();
+  }
+
+  async function attemptSync() {
+    if (!navigator.onLine) { updateSyncStatus('offline'); return; }
+    if (state.pendingQueue.length === 0) { updateSyncStatus('online'); return; }
+    updateSyncStatus('pending');
+    for (let i = 0; i < state.pendingQueue.length; i++) {
+      const item = state.pendingQueue[i];
+      try {
+        if (item.action === 'set') await set(ref(database, item.path), item.data);
+        else if (item.action === 'remove') await remove(ref(database, item.path));
+        state.pendingQueue.splice(i, 1);
+        i--;
+        saveLocal();
+      } catch (err) {
+        console.warn('Sync failed', err);
+        updateSyncStatus('error');
+        return;
+      }
+    }
+    updateSyncStatus('online');
+    saveLocal();
+  }
+
+  function updateSyncStatus(status) {
+    state.syncStatus = status;
+    const el = $('#syncStatusSidebar');
+    if (!el) return;
+    const map = {
+      online:    { icon: 'fa-cloud-upload-alt', text: 'Online · synced', cls: 'sync-online' },
+      offline:   { icon: 'fa-wifi', text: 'Offline — saved locally', cls: 'sync-offline' },
+      pending:   { icon: 'fa-spinner fa-pulse', text: 'Syncing…', cls: 'sync-pending' },
+      error:     { icon: 'fa-exclamation-triangle', text: 'Sync error — will retry', cls: 'sync-error' },
+      connecting:{ icon: 'fa-circle-notch fa-spin', text: 'Connecting…', cls: '' }
+    };
+    const m = map[status] || map.connecting;
+    el.innerHTML = `<i class="fas ${m.icon}"></i> <span>${m.text}</span>`;
+    el.className = 'sync-status ' + m.cls;
+  }
+
+  // ============================================================
+  // FIREBASE LISTENERS
+  // ============================================================
+  function listenClasses() {
+    onValue(ref(database, 'attendanceTracker/classes'), (snap) => {
+      if (snap.exists()) {
+        const remote = snap.val();
+        const merged = { ...state.classes };
+        Object.keys(remote).forEach(cid => {
+          const r = remote[cid];
+          const local = merged[cid] || {};
+          merged[cid] = {
+            ...local, ...r,
+            students: { ...(local.students || {}), ...(r.students || {}) }
+          };
+        });
+        state.classes = merged;
+        saveLocal();
+        populateClassSelects();
+      }
+      updateSyncStatus('online');
+    }, (err) => { console.warn('classes listener', err); updateSyncStatus('offline'); });
+  }
+
+  function listenAttendance() {
+    onValue(ref(database, 'attendanceTracker/attendance'), (snap) => {
+      if (snap.exists()) {
+        state.attendance = snap.val();
+        saveLocal();
+      }
+      updateSyncStatus('online');
+    }, (err) => { console.warn('attendance listener', err); updateSyncStatus('offline'); });
+  }
+
+  function listenSettings() {
+    onValue(ref(database, 'attendanceTracker/settings'), (snap) => {
+      if (snap.exists()) {
+        const s = snap.val();
+        state.schoolName = s.schoolName || 'My School';
+        localStorage.setItem(LS_SETTINGS, JSON.stringify({ schoolName: state.schoolName }));
+      }
+    }, (err) => { console.warn('settings listener', err); });
+  }
+
+  async function loadRemoteInitial() {
+    try {
+      const cSnap = await get(ref(database, 'attendanceTracker/classes'));
+      if (cSnap.exists()) {
+        const remote = cSnap.val();
+        const merged = { ...state.classes };
+        Object.keys(remote).forEach(cid => {
+          const r = remote[cid];
+          const local = merged[cid] || {};
+          merged[cid] = {
+            ...local, ...r,
+            students: { ...(local.students || {}), ...(r.students || {}) }
+          };
+        });
+        state.classes = merged;
+      }
+      const aSnap = await get(ref(database, 'attendanceTracker/attendance'));
+      if (aSnap.exists()) state.attendance = aSnap.val();
+      const sSnap = await get(ref(database, 'attendanceTracker/settings'));
+      if (sSnap.exists()) {
+        const s = sSnap.val();
+        state.schoolName = s.schoolName || 'My School';
+      }
+      saveLocal();
+      populateClassSelects();
+      updateSyncStatus('online');
+    } catch (err) {
+      console.warn('initial load failed', err);
+      updateSyncStatus('offline');
+    }
+  }
+
+  // ============================================================
+  // UI INIT
+  // ============================================================
+  function populateClassSelects() {
+    const cfgClass = $('#cfgClass');
+    const prev = cfgClass.value;
+    cfgClass.innerHTML = '<option value="">— Select class —</option>' +
+      Object.keys(state.classes).map(cid => {
+        const c = state.classes[cid];
+        const label = [c.name, c.section].filter(Boolean).join(' · ');
+        return `<option value="${cid}">${escapeHtml(label)}</option>`;
+      }).join('');
+    if (prev && state.classes[prev]) cfgClass.value = prev;
+    populateStudentSelect();
+  }
+
+  function populateStudentSelect() {
+    const cfgStudent = $('#cfgStudent');
+    const cid = $('#cfgClass').value;
+    const prev = cfgStudent.value;
+    cfgStudent.innerHTML = '<option value="">— Select student —</option>';
+    if (!cid) return;
+    const students = state.classes[cid]?.students || {};
+    Object.keys(students).forEach(sid => {
+      const s = students[sid];
+      cfgStudent.innerHTML += `<option value="${sid}">${escapeHtml(s.fullName)} (${escapeHtml(s.rollNumber || '')})</option>`;
+    });
+    if (prev && students[prev]) cfgStudent.value = prev;
+  }
+
+  $('#cfgClass').addEventListener('change', () => {
+    populateStudentSelect();
+  });
+
+  // Default dates
+  $('#cfgDate').value = todayISO();
+  $('#cfgDateFrom').value = todayISO();
+  $('#cfgDateTo').value = todayISO();
+  $('#cfgMonth').value = todayISO().slice(0, 7);
+
+  // ============================================================
+  // REPORT TYPE SWITCHING
+  // ============================================================
+  function setReportType(type) {
+    state.reportType = type;
+    $$('.report-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.report === type);
+    });
+
+    // Show/hide config groups
+    const cfgClassGroup = $('#cfgClassGroup');
+    const cfgStudentGroup = $('#cfgStudentGroup');
+    const cfgDateGroup = $('#cfgDateGroup');
+    const cfgDateFromGroup = $('#cfgDateFromGroup');
+    const cfgDateToGroup = $('#cfgDateToGroup');
+    const cfgMonthGroup = $('#cfgMonthGroup');
+
+    // Reset display
+    cfgClassGroup.style.display = '';
+    cfgStudentGroup.style.display = 'none';
+    cfgDateGroup.style.display = '';
+    cfgDateFromGroup.style.display = 'none';
+    cfgDateToGroup.style.display = 'none';
+    cfgMonthGroup.style.display = 'none';
+
+    if (type === 'daily') {
+      // class + date
+    } else if (type === 'weekly') {
+      // class + date (any date within week)
+    } else if (type === 'monthly') {
+      // class + month
+      cfgDateGroup.style.display = 'none';
+      cfgMonthGroup.style.display = '';
+    } else if (type === 'custom') {
+      // class + from + to
+      cfgDateGroup.style.display = 'none';
+      cfgDateFromGroup.style.display = '';
+      cfgDateToGroup.style.display = '';
+    } else if (type === 'student') {
+      // class + student + from + to
+      cfgStudentGroup.style.display = '';
+      cfgDateGroup.style.display = 'none';
+      cfgDateFromGroup.style.display = '';
+      cfgDateToGroup.style.display = '';
+    } else if (type === 'summary') {
+      // class + month (or from/to) — use month for class summary
+      cfgDateGroup.style.display = 'none';
+      cfgMonthGroup.style.display = '';
+    }
+  }
+
+  $$('.report-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      setReportType(tab.dataset.report);
+    });
+  });
+
+  // ============================================================
+  // REPORT GENERATION
+  // ============================================================
+  $('#generateReportBtn').addEventListener('click', () => {
+    const type = state.reportType;
+    const cid = $('#cfgClass').value;
+
+    if (!cid) { toast('Please select a class'); return; }
+    if (!state.classes[cid]) { toast('Class not found'); return; }
+
+    let html = '';
+    let title = '';
+
+    if (type === 'daily') {
+      const date = $('#cfgDate').value;
+      if (!date) { toast('Please select a date'); return; }
+      ({ html, title } = generateDailyReport(cid, date));
+    } else if (type === 'weekly') {
+      const date = $('#cfgDate').value;
+      if (!date) { toast('Please select a date within the week'); return; }
+      const range = getWeekRange(date);
+      ({ html, title } = generateRangeReport(cid, range.from, range.to, 'Weekly Attendance Report'));
+    } else if (type === 'monthly') {
+      const month = $('#cfgMonth').value;
+      if (!month) { toast('Please select a month'); return; }
+      const range = getMonthRange(month);
+      ({ html, title } = generateRangeReport(cid, range.from, range.to, 'Monthly Attendance Report'));
+    } else if (type === 'custom') {
+      const from = $('#cfgDateFrom').value;
+      const to = $('#cfgDateTo').value;
+      if (!from || !to) { toast('Please select both dates'); return; }
+      if (from > to) { toast('From date must be before To date'); return; }
+      ({ html, title } = generateRangeReport(cid, from, to, 'Custom Range Attendance Report'));
+    } else if (type === 'student') {
+      const sid = $('#cfgStudent').value;
+      if (!sid) { toast('Please select a student'); return; }
+      const from = $('#cfgDateFrom').value;
+      const to = $('#cfgDateTo').value;
+      if (!from || !to) { toast('Please select both dates'); return; }
+      if (from > to) { toast('From date must be before To date'); return; }
+      ({ html, title } = generateStudentReport(cid, sid, from, to));
+    } else if (type === 'summary') {
+      const month = $('#cfgMonth').value;
+      if (!month) { toast('Please select a month'); return; }
+      const range = getMonthRange(month);
+      ({ html, title } = generateClassSummary(cid, range.from, range.to));
+    }
+
+    if (!html) return;
+
+    state.lastReport = { html, title, generatedAt: Date.now() };
+    $('#reportPreview').innerHTML = html;
+    document.title = title + ' · AttendTrack';
+    toast('Report generated');
+  });
+
+  // ------------------------------------------------------------
+  // Shared header/footer builders
+  // ------------------------------------------------------------
+  function reportHeader(title, metaRows) {
+    return `
+      <div class="rpt-header">
+        <div class="rpt-school">${escapeHtml(state.schoolName || 'My School')}</div>
+        <div class="rpt-title">${escapeHtml(title)}</div>
+      </div>
+      <div class="rpt-meta">
+        ${metaRows.map(r => `<span><strong>${escapeHtml(r.label)}:</strong> ${escapeHtml(r.value)}</span>`).join('')}
+      </div>
+    `;
+  }
+
+  function reportSignatures() {
+    return `
+      <div class="rpt-signatures">
+        <div class="rpt-sig-block">
+          <div class="rpt-sig-line">Class Teacher Signature</div>
+        </div>
+        <div class="rpt-sig-block">
+          <div class="rpt-sig-line">Principal Signature</div>
+        </div>
+        <div class="rpt-sig-block">
+          <div class="rpt-sig-line">Date: ________________</div>
+        </div>
+      </div>
+      <div class="rpt-footer">
+        Generated on ${new Date().toLocaleString()} · AttendTrack Attendance System
+      </div>
+    `;
+  }
+
+  function classLabel(cid) {
+    const c = state.classes[cid] || {};
+    return [c.name, c.section].filter(Boolean).join(' · ') || 'Unknown class';
+  }
+
+  // ------------------------------------------------------------
+  // 1) DAILY report — students as rows, single date column
+  // ------------------------------------------------------------
+  function generateDailyReport(cid, date) {
+    const cls = state.classes[cid];
+    const students = cls.students || {};
+    const day = state.attendance[cid]?.[date] || {};
+    const studentIds = Object.keys(students);
+
+    if (studentIds.length === 0) {
+      return {
+        html: `<div class="report-empty"><i class="fas fa-user-slash"></i><p>This class has no students.</p></div>`,
+        title: 'Daily Attendance Report'
+      };
+    }
+
+    let present = 0, absent = 0, unmarked = 0;
+    const rows = studentIds.sort((a, b) => {
+      const ra = students[a].rollNumber || '';
+      const rb = students[b].rollNumber || '';
+      return ra.localeCompare(rb, undefined, { numeric: true });
+    }).map(sid => {
+      const s = students[sid];
+      const rec = day[sid];
+      const status = rec?.status || 'unmarked';
+      if (status === 'present') present++;
+      else if (status === 'absent') absent++;
+      else unmarked++;
+      const statusCls = status === 'present' ? 'status-p' : status === 'absent' ? 'status-a' : 'status-u';
+      const statusText = status === 'present' ? 'Present' : status === 'absent' ? 'Absent' : 'Not marked';
+      return `
+        <tr>
+          <td>${escapeHtml(s.rollNumber || '—')}</td>
+          <td>${escapeHtml(s.fullName)}</td>
+          <td class="${statusCls}">${statusText}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const total = studentIds.length;
+    const pct = total ? Math.round((present / total) * 100) : 0;
+
+    const html = `
+      ${reportHeader('Daily Attendance Report', [
+        { label: 'Class', value: classLabel(cid) },
+        { label: 'Academic Year', value: cls.academicYear || '—' },
+        { label: 'Date', value: formatDatePretty(date) }
+      ])}
+      <table>
+        <thead>
+          <tr>
+            <th style="width:18%;">Roll / ID</th>
+            <th>Student Name</th>
+            <th style="width:22%;">Status</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="rpt-summary">
+        <span>Total students: <strong>${total}</strong></span>
+        <span>Present: <strong>${present}</strong></span>
+        <span>Absent: <strong>${absent}</strong></span>
+        <span>Not marked: <strong>${unmarked}</strong></span>
+        <span>Attendance: <strong>${pct}%</strong></span>
+      </div>
+      ${reportSignatures()}
+    `;
+    return { html, title: 'Daily Attendance Report' };
+  }
+
+  // ------------------------------------------------------------
+  // 2) RANGE report — students as rows, dates as columns + totals
+  // ------------------------------------------------------------
+  function generateRangeReport(cid, from, to, title) {
+    const cls = state.classes[cid];
+    const students = cls.students || {};
+    const studentIds = Object.keys(students);
+
+    if (studentIds.length === 0) {
+      return {
+        html: `<div class="report-empty"><i class="fas fa-user-slash"></i><p>This class has no students.</p></div>`,
+        title
+      };
+    }
+
+    // Collect all dates in range that have attendance records
+    const classAtt = state.attendance[cid] || {};
+    const dates = Object.keys(classAtt)
+      .filter(d => dateInRange(d, from, to))
+      .sort();
+
+    if (dates.length === 0) {
+      return {
+        html: `<div class="report-empty"><i class="fas fa-inbox"></i><p>No attendance records found in this date range.</p></div>`,
+        title
+      };
+    }
+
+    // Sorted students by roll number
+    const sortedStudents = studentIds.slice().sort((a, b) => {
+      const ra = students[a].rollNumber || '';
+      const rb = students[b].rollNumber || '';
+      return ra.localeCompare(rb, undefined, { numeric: true });
+    });
+
+    // Build header: one column per date (short) + totals
+    const dateHeaders = dates.map(d => {
+      const [, m, day] = d.split('-');
+      return `<th style="text-align:center;">${day}/${m}</th>`;
+    }).join('');
+
+    let grandPresent = 0, grandAbsent = 0;
+
+    const rows = sortedStudents.map(sid => {
+      const s = students[sid];
+      let present = 0, absent = 0, marked = 0;
+      const cells = dates.map(d => {
+        const rec = classAtt[d]?.[sid];
+        if (!rec) return `<td style="text-align:center;" class="status-u">—</td>`;
+        marked++;
+        if (rec.status === 'present') { present++; return `<td style="text-align:center;" class="status-p">P</td>`; }
+        if (rec.status === 'absent') { absent++; return `<td style="text-align:center;" class="status-a">A</td>`; }
+        return `<td style="text-align:center;" class="status-u">—</td>`;
+      }).join('');
+      grandPresent += present;
+      grandAbsent += absent;
+      const pct = marked ? Math.round((present / marked) * 100) : 0;
+      return `
+        <tr>
+          <td>${escapeHtml(s.rollNumber || '—')}</td>
+          <td>${escapeHtml(s.fullName)}</td>
+          ${cells}
+          <td class="col-total status-p">${present}</td>
+          <td class="col-total status-a">${absent}</td>
+          <td class="col-total">${pct}%</td>
+        </tr>
+      `;
+    }).join('');
+
+    const totalRecords = grandPresent + grandAbsent;
+    const grandPct = totalRecords ? Math.round((grandPresent / totalRecords) * 100) : 0;
+
+    const html = `
+      ${reportHeader(title, [
+        { label: 'Class', value: classLabel(cid) },
+        { label: 'Academic Year', value: cls.academicYear || '—' },
+        { label: 'Period', value: formatDatePretty(from) + ' → ' + formatDatePretty(to) },
+        { label: 'Days with records', value: String(dates.length) }
+      ])}
+      <table>
+        <thead>
+          <tr>
+            <th style="width:10%;">Roll</th>
+            <th style="width:22%;">Student Name</th>
+            ${dateHeaders}
+            <th style="text-align:center;">P</th>
+            <th style="text-align:center;">A</th>
+            <th style="text-align:center;">%</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="rpt-summary">
+        <span>Students: <strong>${sortedStudents.length}</strong></span>
+        <span>Days: <strong>${dates.length}</strong></span>
+        <span>Total present: <strong>${grandPresent}</strong></span>
+        <span>Total absent: <strong>${grandAbsent}</strong></span>
+        <span>Overall attendance: <strong>${grandPct}%</strong></span>
+      </div>
+      ${reportSignatures()}
+    `;
+    return { html, title };
+  }
+
+  // ------------------------------------------------------------
+  // 3) STUDENT report — one student, list of dates
+  // ------------------------------------------------------------
+  function generateStudentReport(cid, sid, from, to) {
+    const cls = state.classes[cid];
+    const student = cls.students?.[sid];
+    if (!student) {
+      return {
+        html: `<div class="report-empty"><i class="fas fa-user-slash"></i><p>Student not found.</p></div>`,
+        title: 'Student Attendance Report'
+      };
+    }
+
+    const classAtt = state.attendance[cid] || {};
+    const dates = Object.keys(classAtt)
+      .filter(d => dateInRange(d, from, to) && classAtt[d]?.[sid])
+      .sort();
+
+    if (dates.length === 0) {
+      return {
+        html: `<div class="report-empty"><i class="fas fa-inbox"></i><p>No attendance records for this student in the selected range.</p></div>`,
+        title: 'Student Attendance Report'
+      };
+    }
+
+    let present = 0, absent = 0;
+    const rows = dates.map(d => {
+      const rec = classAtt[d][sid];
+      if (rec.status === 'present') present++;
+      else if (rec.status === 'absent') absent++;
+      const statusCls = rec.status === 'present' ? 'status-p' : rec.status === 'absent' ? 'status-a' : 'status-u';
+      const statusText = rec.status === 'present' ? 'Present' : rec.status === 'absent' ? 'Absent' : 'Not marked';
+      const time = rec.timestamp ? new Date(rec.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '—';
+      return `
+        <tr>
+          <td>${escapeHtml(formatDatePretty(d))}</td>
+          <td class="${statusCls}">${statusText}</td>
+          <td>${escapeHtml(time)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const total = present + absent;
+    const pct = total ? Math.round((present / total) * 100) : 0;
+
+    const html = `
+      ${reportHeader('Individual Student Attendance Report', [
+        { label: 'Student', value: student.fullName },
+        { label: 'Roll / ID', value: student.rollNumber || '—' },
+        { label: 'Class', value: classLabel(cid) },
+        { label: 'Academic Year', value: cls.academicYear || '—' },
+        { label: 'Period', value: formatDatePretty(from) + ' → ' + formatDatePretty(to) }
+      ])}
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40%;">Date</th>
+            <th style="width:30%;">Status</th>
+            <th>Time recorded</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="rpt-summary">
+        <span>Total days marked: <strong>${total}</strong></span>
+        <span>Present: <strong>${present}</strong></span>
+        <span>Absent: <strong>${absent}</strong></span>
+        <span>Attendance: <strong>${pct}%</strong></span>
+      </div>
+      ${reportSignatures()}
+    `;
+    return { html, title: 'Student Attendance Report' };
+  }
+
+  // ------------------------------------------------------------
+  // 4) CLASS SUMMARY — one row per student with total P/A/%
+  // ------------------------------------------------------------
+  function generateClassSummary(cid, from, to) {
+    const cls = state.classes[cid];
+    const students = cls.students || {};
+    const studentIds = Object.keys(students);
+
+    if (studentIds.length === 0) {
+      return {
+        html: `<div class="report-empty"><i class="fas fa-user-slash"></i><p>This class has no students.</p></div>`,
+        title: 'Class Attendance Summary'
+      };
+    }
+
+    const classAtt = state.attendance[cid] || {};
+    const dates = Object.keys(classAtt).filter(d => dateInRange(d, from, to));
+
+    if (dates.length === 0) {
+      return {
+        html: `<div class="report-empty"><i class="fas fa-inbox"></i><p>No attendance records found in this range.</p></div>`,
+        title: 'Class Attendance Summary'
+      };
+    }
+
+    const sortedStudents = studentIds.slice().sort((a, b) => {
+      const ra = students[a].rollNumber || '';
+      const rb = students[b].rollNumber || '';
+      return ra.localeCompare(rb, undefined, { numeric: true });
+    });
+
+    let grandPresent = 0, grandAbsent = 0;
+    const rows = sortedStudents.map(sid => {
+      const s = students[sid];
+      let present = 0, absent = 0, marked = 0;
+      dates.forEach(d => {
+        const rec = classAtt[d]?.[sid];
+        if (!rec) return;
+        marked++;
+        if (rec.status === 'present') present++;
+        else if (rec.status === 'absent') absent++;
+      });
+      grandPresent += present;
+      grandAbsent += absent;
+      const pct = marked ? Math.round((present / marked) * 100) : 0;
+      return `
+        <tr>
+          <td>${escapeHtml(s.rollNumber || '—')}</td>
+          <td>${escapeHtml(s.fullName)}</td>
+          <td class="col-total status-p">${present}</td>
+          <td class="col-total status-a">${absent}</td>
+          <td class="col-total">${marked}</td>
+          <td class="col-total">${pct}%</td>
+        </tr>
+      `;
+    }).join('');
+
+    const totalRecords = grandPresent + grandAbsent;
+    const grandPct = totalRecords ? Math.round((grandPresent / totalRecords) * 100) : 0;
+
+    const html = `
+      ${reportHeader('Class Attendance Summary', [
+        { label: 'Class', value: classLabel(cid) },
+        { label: 'Academic Year', value: cls.academicYear || '—' },
+        { label: 'Period', value: formatDatePretty(from) + ' → ' + formatDatePretty(to) },
+        { label: 'Days with records', value: String(dates.length) }
+      ])}
+      <table>
+        <thead>
+          <tr>
+            <th style="width:12%;">Roll / ID</th>
+            <th>Student Name</th>
+            <th style="text-align:center;">Present</th>
+            <th style="text-align:center;">Absent</th>
+            <th style="text-align:center;">Marked</th>
+            <th style="text-align:center;">%</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="rpt-summary">
+        <span>Students: <strong>${sortedStudents.length}</strong></span>
+        <span>Days: <strong>${dates.length}</strong></span>
+        <span>Total present: <strong>${grandPresent}</strong></span>
+        <span>Total absent: <strong>${grandAbsent}</strong></span>
+        <span>Overall attendance: <strong>${grandPct}%</strong></span>
+      </div>
+      ${reportSignatures()}
+    `;
+    return { html, title: 'Class Attendance Summary' };
+  }
+
+  // ============================================================
+  // PRINT
+  // ============================================================
+  $('#printBtn').addEventListener('click', () => {
+    const preview = $('#reportPreview');
+    if (!state.lastReport) {
+      toast('Generate a report first');
+      return;
+    }
+    window.print();
+  });
+
+
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  loadLocal();
+  populateClassSelects();
+  setReportType('daily');
+  updateSyncStatus(navigator.onLine ? 'connecting' : 'offline');
+
+  listenClasses();
+  listenAttendance();
+  listenSettings();
+  loadRemoteInitial();
+
+  window.addEventListener('online', () => attemptSync());
+  window.addEventListener('offline', () => updateSyncStatus('offline'));
+</script>
+</body>
+</html>

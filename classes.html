@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Attendance Tracker · Class Management</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* ---------- GLOBAL ---------- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      background: #f4f7fc;
+      color: #1e293b;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+    /* ---------- SIDEBAR ---------- */
+    .sidebar {
+      width: 260px;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      padding: 1.8rem 1rem;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 20;
+    }
+    .sidebar h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #0f3b5e;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      padding-left: 0.5rem;
+    }
+    .sidebar h1 i { color: #2a7faa; font-size: 1.6rem; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.8rem 1rem;
+      border-radius: 10px;
+      color: #475569;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 0.3rem;
+      transition: background 0.15s, color 0.15s;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+    .nav-item i { width: 20px; color: #5b8db8; }
+    .nav-item.active { background: #e6f0f9; color: #0b3b5c; font-weight: 600; }
+    .nav-item.active i { color: #1e6f9f; }
+    .nav-item:hover:not(.active) { background: #f1f5f9; }
+    .sync-status {
+      margin-top: auto;
+      font-size: 0.8rem;
+      padding: 1rem 0.8rem;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #3b5e7e;
+      word-break: break-word;
+    }
+    .sync-online { color: #0a7e4e; }
+    .sync-offline { color: #b45309; }
+    .sync-error { color: #b91c1c; }
+    .sync-pending { color: #b45309; }
+
+    /* ---------- MAIN ---------- */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.8rem 2rem;
+      height: 100vh;
+      background: #f4f7fc;
+    }
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #0f3b5e;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.01em;
+    }
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #1e4a6b;
+      margin-bottom: 1rem;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 1.5rem;
+      box-shadow: 0 6px 18px rgba(0, 20, 40, 0.04);
+      border: 1px solid #e9eef3;
+      margin-bottom: 1.5rem;
+    }
+    .btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: #1e293b;
+      cursor: pointer;
+      transition: 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn i { font-size: 0.9rem; }
+    .btn:hover { background: #f8fafc; border-color: #94a3b8; }
+    .btn-primary { background: #1e6f9f; border-color: #1e6f9f; color: white; }
+    .btn-primary:hover { background: #155a82; border-color: #155a82; }
+    .btn-danger { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-success { background: #dcfce7; border-color: #bbf7d0; color: #0a7e4e; }
+    .btn-success:hover { background: #bbf7d0; }
+    .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+    .btn-icon { padding: 0.4rem 0.6rem; }
+    .flex-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; }
+    .flex-between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.8rem; }
+    input, select, textarea {
+      padding: 0.7rem 0.9rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background: white;
+      transition: 0.1s;
+      width: 100%;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid #7fb4d4;
+      border-color: transparent;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; }
+    .form-group label { font-size: 0.85rem; font-weight: 500; color: #334155; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th {
+      text-align: left;
+      padding: 0.8rem 0.5rem;
+      background: #f1f6fa;
+      color: #1e4a6b;
+      font-weight: 600;
+      border-bottom: 1px solid #d9e2ec;
+    }
+    td { padding: 0.7rem 0.5rem; border-bottom: 1px solid #eef2f6; vertical-align: middle; }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-present { background: #dcfce7; color: #0a7e4e; }
+    .badge-absent { background: #fee2e2; color: #b91c1c; }
+    .badge-unmarked { background: #f1f5f9; color: #64748b; }
+    .badge-info { background: #e0f2fe; color: #0369a1; }
+
+    /* ---------- CLASS CARDS ---------- */
+    .class-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2rem;
+    }
+    .class-card {
+      background: white;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      padding: 1.2rem;
+      cursor: pointer;
+      transition: 0.15s;
+      position: relative;
+    }
+    .class-card:hover { border-color: #94b8d4; box-shadow: 0 8px 20px rgba(0, 30, 60, 0.06); }
+    .class-card.selected { border-color: #1e6f9f; box-shadow: 0 0 0 3px rgba(30, 111, 159, 0.15); }
+    .class-card .class-title { font-size: 1.05rem; font-weight: 600; color: #0f3b5e; }
+    .class-card .class-meta { font-size: 0.8rem; color: #64748b; margin-top: 0.2rem; }
+    .class-card .class-stats { margin-top: 0.8rem; font-size: 0.85rem; color: #1e6f9f; font-weight: 500; }
+    .class-card-actions {
+      position: absolute;
+      top: 0.8rem;
+      right: 0.8rem;
+      display: flex;
+      gap: 0.3rem;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .class-card:hover .class-card-actions,
+    .class-card.selected .class-card-actions { opacity: 1; }
+    .icon-btn {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: #475569;
+    }
+    .icon-btn:hover { background: #eef2f6; }
+    .icon-btn.danger { color: #b91c1c; }
+    .icon-btn.danger:hover { background: #fee2e2; }
+
+    /* ---------- STUDENT PANEL ---------- */
+    .student-panel {
+      border-top: 1px solid #e2e8f0;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+    }
+    .student-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-bottom: 1rem;
+      align-items: center;
+    }
+    .student-toolbar input, .student-toolbar select { width: auto; flex: 1; min-width: 140px; }
+    .student-toolbar .btn { flex: 0 0 auto; }
+    .student-table-wrap { overflow-x: auto; }
+    .student-table td { font-size: 0.88rem; }
+    .student-row-actions { display: flex; gap: 0.3rem; }
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: #64748b;
+    }
+    .empty-state i { font-size: 2.5rem; color: #b8c9d9; margin-bottom: 0.8rem; display: block; }
+
+    /* ---------- MODAL ---------- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 30, 45, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 18px;
+      padding: 1.8rem;
+      width: 100%;
+      max-width: 460px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(0, 20, 40, 0.25);
+    }
+    .modal h3 { margin-bottom: 1.2rem; }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.7rem;
+      margin-top: 1.5rem;
+    }
+    .modal-close {
+      float: right;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    /* ---------- MOBILE NAV ---------- */
+    .mobile-nav {
+      display: none;
+      background: white;
+      border-top: 1px solid #e2e8f0;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: 30;
+      padding: 0.5rem 0.3rem;
+      justify-content: space-around;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
+    }
+    .mobile-nav-item {
+      background: transparent;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.65rem;
+      color: #64748b;
+      padding: 0.3rem 0.2rem;
+      border-radius: 12px;
+      gap: 0.2rem;
+    }
+    .mobile-nav-item i { font-size: 1.2rem; }
+    .mobile-nav-item.active { color: #1e6f9f; font-weight: 600; }
+
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f3b5e;
+      color: white;
+      padding: 0.7rem 1.4rem;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+      box-shadow: 0 8px 24px rgba(0, 20, 40, 0.2);
+    }
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main-content { padding: 1.2rem 1rem 5rem 1rem; }
+      .mobile-nav { display: flex; }
+      h2 { font-size: 1.5rem; }
+      .class-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <h1><i class="fas fa-clipboard-check"></i> AttendTrack</h1>
+  <a class="nav-item" href="home.html" data-page="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a class="nav-item active" href="#" data-page="classes"><i class="fas fa-school"></i> Classes</a>
+  <a class="nav-item" href="attendance.html" data-page="takeAttendance"><i class="fas fa-user-check"></i> Take Attendance</a>
+  <a class="nav-item" href="record.html" data-page="records"><i class="fas fa-table"></i> Records</a>
+  <a class="nav-item" href="report.html" data-page="reports"><i class="fas fa-file-alt"></i> Reports</a>
+  
+  <div class="sync-status" id="syncStatusSidebar">
+    <i class="fas fa-circle-notch fa-spin"></i> <span>Connecting…</span>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+
+  <!-- ============ CLASS MANAGEMENT PAGE ============ -->
+  <section id="page-classes" class="page active-page">
+    <div class="flex-between" style="margin-bottom:1.5rem;">
+      <h2 style="margin-bottom:0;">Class Management</h2>
+      <button class="btn btn-primary" id="openAddClassModal">
+        <i class="fas fa-plus"></i> New Class
+      </button>
+    </div>
+
+    <!-- Class grid -->
+    <div id="classGridContainer">
+      <div class="class-grid" id="classGrid"></div>
+      <div class="empty-state" id="classEmptyState" style="display:none;">
+        <i class="fas fa-school"></i>
+        <p>No classes yet. Click <strong>New Class</strong> to create your first one.</p>
+      </div>
+    </div>
+
+    <!-- Selected class students panel -->
+    <div id="studentPanel" class="student-panel card" style="display:none;">
+      <div class="flex-between" style="margin-bottom:1rem;">
+        <h3 id="studentPanelTitle" style="margin-bottom:0;">Students</h3>
+        <div class="flex-row">
+          <button class="btn btn-sm" id="editSelectedClassBtn"><i class="fas fa-pen"></i> Edit class</button>
+          <button class="btn btn-sm btn-danger" id="deleteSelectedClassBtn"><i class="fas fa-trash"></i> Delete class</button>
+        </div>
+      </div>
+
+      <!-- Toolbar: search + add student -->
+      <div class="student-toolbar">
+        <input type="text" id="studentSearchInput" placeholder="Search by name or roll number…">
+        <select id="studentSortSelect">
+          <option value="name-asc">Name A–Z</option>
+          <option value="name-desc">Name Z–A</option>
+          <option value="roll-asc">Roll no. A–Z</option>
+          <option value="roll-desc">Roll no. Z–A</option>
+          <option value="newest">Newest first</option>
+        </select>
+        <button class="btn btn-primary btn-sm" id="openAddStudentModal"><i class="fas fa-user-plus"></i> Add Student</button>
+      </div>
+
+      <div class="student-table-wrap">
+        <table class="student-table">
+          <thead>
+            <tr>
+              <th style="width:40px;">#</th>
+              <th>Roll / ID</th>
+              <th>Full Name</th>
+              <th>Extra info</th>
+              <th style="width:120px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="studentTbody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="studentEmptyState" style="display:none;">
+        <i class="fas fa-user-graduate"></i>
+        <p>No students in this class yet. Add your first student above.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav">
+  <a class="mobile-nav-item" href="home.html" data-page="dashboard"><i class="fas fa-chart-pie"></i> Home</a>
+  <a class="mobile-nav-item active" href="#" data-page="classes"><i class="fas fa-school"></i> Classes</a>
+  <a class="mobile-nav-item" href="attendance.html" data-page="takeAttendance"><i class="fas fa-user-check"></i> Attend</a>
+  <a class="mobile-nav-item" href="record.html" data-page="records"><i class="fas fa-table"></i> Records</a>
+  <a class="mobile-nav-item" href="report.html" data-page="reports"><i class="fas fa-file-alt"></i> Reports</a>
+</nav>
+
+<!-- ============ MODALS ============ -->
+
+<!-- Add / Edit Class -->
+<div class="modal-backdrop" id="classModalBackdrop">
+  <div class="modal">
+    <button class="modal-close" id="closeClassModal">&times;</button>
+    <h3 id="classModalTitle">New Class</h3>
+    <form id="classForm">
+      <input type="hidden" id="classFormId">
+      <div class="form-group">
+        <label for="classFormName">Class name *</label>
+        <input type="text" id="classFormName" required placeholder="e.g. Grade 10">
+      </div>
+      <div class="form-group">
+        <label for="classFormGrade">Grade / level</label>
+        <input type="text" id="classFormGrade" placeholder="e.g. 10">
+      </div>
+      <div class="form-group">
+        <label for="classFormSection">Section</label>
+        <input type="text" id="classFormSection" placeholder="e.g. A">
+      </div>
+      <div class="form-group">
+        <label for="classFormYear">Academic year</label>
+        <input type="text" id="classFormYear" placeholder="e.g. 2025-2026">
+      </div>
+      <div class="form-group">
+        <label for="classFormDescription">Description (optional)</label>
+        <textarea id="classFormDescription" rows="2" placeholder="Optional notes"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="cancelClassModal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveClassBtn">Save Class</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add / Edit Student -->
+<div class="modal-backdrop" id="studentModalBackdrop">
+  <div class="modal">
+    <button class="modal-close" id="closeStudentModal">&times;</button>
+    <h3 id="studentModalTitle">Add Student</h3>
+    <form id="studentForm">
+      <input type="hidden" id="studentFormId">
+      <div class="form-group">
+        <label for="studentFormRoll">Roll number / Student ID *</label>
+        <input type="text" id="studentFormRoll" required placeholder="e.g. 101 or STU-001">
+        <small class="text-muted" id="studentRollHint">Must be unique within this class.</small>
+      </div>
+      <div class="form-group">
+        <label for="studentFormName">Full name *</label>
+        <input type="text" id="studentFormName" required placeholder="e.g. Jane Doe">
+      </div>
+      <div class="form-group">
+        <label for="studentFormExtra">Additional information (optional)</label>
+        <input type="text" id="studentFormExtra" placeholder="e.g. Guardian contact">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="cancelStudentModal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveStudentBtn">Save Student</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm dialog -->
+<div class="modal-backdrop" id="confirmModalBackdrop">
+  <div class="modal" style="max-width:400px;">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmMessage" class="text-muted">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="confirmCancelBtn">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  // ============================================================
+  // FIREBASE SETUP
+  // ============================================================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import {
+    getDatabase, ref, set, onValue, get, remove, update
+  } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBV4mq7IO9ubmW6m1RIvbNRa1g9IVr25k8",
+    authDomain: "attendance-taker-ee32b.firebaseapp.com",
+    databaseURL: "https://attendance-taker-ee32b-default-rtdb.firebaseio.com",
+    projectId: "attendance-taker-ee32b",
+    storageBucket: "attendance-taker-ee32b.firebasestorage.app",
+    messagingSenderId: "22851789508",
+    appId: "1:22851789508:web:d2a3e773eb3a29b5385f91",
+    measurementId: "G-0P6QWMLB2G"
+  };
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  const state = {
+    classes: {},              // classId -> { id, name, grade, section, academicYear, description, createdAt, students: { studentId: { id, rollNumber, fullName, extra, createdAt } } }
+    selectedClassId: null,
+    pendingQueue: [],
+    syncStatus: 'connecting',
+    studentSearch: '',
+    studentSort: 'name-asc',
+    confirmCallback: null
+  };
+
+  const LS_CLASSES = 'attendanceTracker_classes';
+  const LS_QUEUE = 'attendanceTracker_queue';
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+  }
+
+  function genId(prefix) {
+    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ============================================================
+  // LOCAL STORAGE + QUEUE
+  // ============================================================
+  function loadLocal() {
+    try {
+      const cls = localStorage.getItem(LS_CLASSES);
+      if (cls) state.classes = JSON.parse(cls);
+      const q = localStorage.getItem(LS_QUEUE);
+      if (q) state.pendingQueue = JSON.parse(q);
+    } catch (e) { console.warn('Local parse error', e); }
+  }
+
+  function saveLocal() {
+    localStorage.setItem(LS_CLASSES, JSON.stringify(state.classes));
+    localStorage.setItem(LS_QUEUE, JSON.stringify(state.pendingQueue));
+  }
+
+  function addToQueue(path, data, action = 'set') {
+    state.pendingQueue.push({
+      id: genId('q'), path, data, action, timestamp: Date.now()
+    });
+    saveLocal();
+    updateSyncStatus('pending');
+    attemptSync();
+  }
+
+  // ============================================================
+  // SYNC
+  // ============================================================
+  async function attemptSync() {
+    if (!navigator.onLine) { updateSyncStatus('offline'); return; }
+    if (state.pendingQueue.length === 0) { updateSyncStatus('online'); return; }
+    updateSyncStatus('pending');
+    for (let i = 0; i < state.pendingQueue.length; i++) {
+      const item = state.pendingQueue[i];
+      try {
+        if (item.action === 'set') await set(ref(database, item.path), item.data);
+        else if (item.action === 'remove') await remove(ref(database, item.path));
+        state.pendingQueue.splice(i, 1);
+        i--;
+        saveLocal();
+      } catch (err) {
+        console.warn('Sync failed', err);
+        updateSyncStatus('error');
+        return;
+      }
+    }
+    updateSyncStatus('online');
+    saveLocal();
+  }
+
+  function updateSyncStatus(status) {
+    state.syncStatus = status;
+    const el = $('#syncStatusSidebar');
+    if (!el) return;
+    const map = {
+      online:    { icon: 'fa-cloud-upload-alt', text: 'Online · synced', cls: 'sync-online' },
+      offline:   { icon: 'fa-wifi', text: 'Offline — saved locally', cls: 'sync-offline' },
+      pending:   { icon: 'fa-spinner fa-pulse', text: 'Syncing…', cls: 'sync-pending' },
+      error:     { icon: 'fa-exclamation-triangle', text: 'Sync error — will retry', cls: 'sync-error' },
+      connecting:{ icon: 'fa-circle-notch fa-spin', text: 'Connecting…', cls: '' }
+    };
+    const m = map[status] || map.connecting;
+    el.innerHTML = `<i class="fas ${m.icon}"></i> <span>${m.text}</span>`;
+    el.className = 'sync-status ' + m.cls;
+  }
+
+  // ============================================================
+  // FIREBASE REALTIME LISTENER
+  // ============================================================
+  function listenClasses() {
+    onValue(ref(database, 'attendanceTracker/classes'), (snap) => {
+      if (snap.exists()) {
+        const remote = snap.val();
+        // Merge: prefer remote for synced classes, but keep local-only classes
+        // (classes that were created offline & not yet synced)
+        const merged = { ...state.classes };
+        Object.keys(remote).forEach(cid => {
+          const r = remote[cid];
+          const local = merged[cid] || {};
+          merged[cid] = {
+            ...local,
+            ...r,
+            students: { ...(local.students || {}), ...(r.students || {}) }
+          };
+        });
+        state.classes = merged;
+        saveLocal();
+        renderClassGrid();
+        if (state.selectedClassId && state.classes[state.selectedClassId]) {
+          renderStudentPanel();
+        } else if (state.selectedClassId && !state.classes[state.selectedClassId]) {
+          state.selectedClassId = null;
+          $('#studentPanel').style.display = 'none';
+        }
+      }
+      updateSyncStatus('online');
+    }, (err) => {
+      console.warn('Realtime error', err);
+      updateSyncStatus('offline');
+    });
+  }
+
+  async function loadRemoteInitial() {
+    try {
+      const snap = await get(ref(database, 'attendanceTracker/classes'));
+      if (snap.exists()) {
+        const remote = snap.val();
+        const merged = { ...state.classes };
+        Object.keys(remote).forEach(cid => {
+          const r = remote[cid];
+          const local = merged[cid] || {};
+          merged[cid] = {
+            ...local,
+            ...r,
+            students: { ...(local.students || {}), ...(r.students || {}) }
+          };
+        });
+        state.classes = merged;
+        saveLocal();
+      }
+      updateSyncStatus('online');
+    } catch (err) {
+      console.warn('Initial load failed', err);
+      updateSyncStatus('offline');
+    }
+  }
+
+  // ============================================================
+  // CLASS GRID RENDER
+  // ============================================================
+  function renderClassGrid() {
+    const grid = $('#classGrid');
+    const empty = $('#classEmptyState');
+    const ids = Object.keys(state.classes);
+
+    if (ids.length === 0) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    grid.innerHTML = ids.map(cid => {
+      const c = state.classes[cid];
+      const count = Object.keys(c.students || {}).length;
+      const selected = cid === state.selectedClassId ? 'selected' : '';
+      const meta = [c.grade, c.section, c.academicYear].filter(Boolean).join(' · ');
+      return `
+        <div class="class-card ${selected}" data-classid="${cid}">
+          <div class="class-card-actions">
+            <button class="icon-btn edit-class-btn" data-classid="${cid}" title="Edit">
+              <i class="fas fa-pen"></i>
+            </button>
+            <button class="icon-btn danger delete-class-btn" data-classid="${cid}" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+          <div class="class-title">${escapeHtml(c.name)}</div>
+          <div class="class-meta">${escapeHtml(meta) || 'No grade / section set'}</div>
+          <div class="class-stats"><i class="fas fa-user-graduate"></i> ${count} student${count === 1 ? '' : 's'}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Card click -> select
+    $$('.class-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.icon-btn')) return;
+        selectClass(card.dataset.classid);
+      });
+    });
+
+    // Edit buttons
+    $$('.edit-class-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openClassModal(btn.dataset.classid);
+      });
+    });
+
+    // Delete buttons
+    $$('.delete-class-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cid = btn.dataset.classid;
+        const c = state.classes[cid];
+        if (!c) return;
+        askConfirm(
+          'Delete class?',
+          `Delete "${c.name}" and all its students? This cannot be undone.`,
+          () => deleteClass(cid)
+        );
+      });
+    });
+  }
+
+  function selectClass(cid) {
+    state.selectedClassId = cid;
+    renderClassGrid();
+    renderStudentPanel();
+  }
+
+  // ============================================================
+  // STUDENT PANEL RENDER
+  // ============================================================
+  function renderStudentPanel() {
+    const panel = $('#studentPanel');
+    const cid = state.selectedClassId;
+    if (!cid || !state.classes[cid]) {
+      panel.style.display = 'none';
+      return;
+    }
+    panel.style.display = 'block';
+    const c = state.classes[cid];
+
+    $('#studentPanelTitle').textContent =
+      `${c.name}${c.section ? ' · ' + c.section : ''} — Students`;
+
+    const students = c.students || {};
+    let list = Object.keys(students).map(sid => ({ id: sid, ...students[sid] }));
+
+    // Search filter
+    const q = state.studentSearch.trim().toLowerCase();
+    if (q) {
+      list = list.filter(s =>
+        (s.fullName || '').toLowerCase().includes(q) ||
+        (s.rollNumber || '').toLowerCase().includes(q)
+      );
+    }
+
+    // Sort
+    const sort = state.studentSort;
+    list.sort((a, b) => {
+      if (sort === 'name-asc')  return (a.fullName || '').localeCompare(b.fullName || '');
+      if (sort === 'name-desc') return (b.fullName || '').localeCompare(a.fullName || '');
+      if (sort === 'roll-asc')  return (a.rollNumber || '').localeCompare(b.rollNumber || '');
+      if (sort === 'roll-desc') return (b.rollNumber || '').localeCompare(a.rollNumber || '');
+      if (sort === 'newest')    return (b.createdAt || 0) - (a.createdAt || 0);
+      return 0;
+    });
+
+    const tbody = $('#studentTbody');
+    const emptyEl = $('#studentEmptyState');
+
+    if (list.length === 0) {
+      tbody.innerHTML = '';
+      emptyEl.style.display = 'block';
+      emptyEl.querySelector('p').textContent = q
+        ? 'No students match your search.'
+        : 'No students in this class yet. Add your first student above.';
+      return;
+    }
+    emptyEl.style.display = 'none';
+
+    tbody.innerHTML = list.map((s, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td><strong>${escapeHtml(s.rollNumber || '—')}</strong></td>
+        <td>${escapeHtml(s.fullName)}</td>
+        <td>${escapeHtml(s.extra || '—')}</td>
+        <td>
+          <div class="student-row-actions">
+            <button class="btn btn-sm edit-student-btn" data-studentid="${s.id}" title="Edit">
+              <i class="fas fa-pen"></i>
+            </button>
+            <button class="btn btn-sm btn-danger delete-student-btn" data-studentid="${s.id}" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    // Edit student
+    $$('.edit-student-btn').forEach(btn => {
+      btn.addEventListener('click', () => openStudentModal(btn.dataset.studentid));
+    });
+
+    // Delete student
+    $$('.delete-student-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sid = btn.dataset.studentid;
+        const s = state.classes[cid].students[sid];
+        if (!s) return;
+        askConfirm(
+          'Remove student?',
+          `Remove "${s.fullName}" from this class? Their attendance records will remain but will no longer be linked to an active student.`,
+          () => deleteStudent(cid, sid)
+        );
+      });
+    });
+  }
+
+  // ============================================================
+  // CLASS CRUD
+  // ============================================================
+  function openClassModal(cid = null) {
+    const backdrop = $('#classModalBackdrop');
+    const form = $('#classForm');
+    form.reset();
+    $('#classFormId').value = '';
+
+    if (cid && state.classes[cid]) {
+      const c = state.classes[cid];
+      $('#classModalTitle').textContent = 'Edit Class';
+      $('#classFormId').value = cid;
+      $('#classFormName').value = c.name || '';
+      $('#classFormGrade').value = c.grade || '';
+      $('#classFormSection').value = c.section || '';
+      $('#classFormYear').value = c.academicYear || '';
+      $('#classFormDescription').value = c.description || '';
+    } else {
+      $('#classModalTitle').textContent = 'New Class';
+      $('#classFormYear').value = '2025-2026';
+    }
+    backdrop.classList.add('open');
+    setTimeout(() => $('#classFormName').focus(), 50);
+  }
+
+  function closeClassModal() {
+    $('#classModalBackdrop').classList.remove('open');
+  }
+
+  $('#openAddClassModal').addEventListener('click', () => openClassModal());
+  $('#closeClassModal').addEventListener('click', closeClassModal);
+  $('#cancelClassModal').addEventListener('click', closeClassModal);
+  $('#classModalBackdrop').addEventListener('click', (e) => {
+    if (e.target === $('#classModalBackdrop')) closeClassModal();
+  });
+
+  $('#classForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = $('#classFormId').value;
+    const name = $('#classFormName').value.trim();
+    const grade = $('#classFormGrade').value.trim();
+    const section = $('#classFormSection').value.trim();
+    const academicYear = $('#classFormYear').value.trim();
+    const description = $('#classFormDescription').value.trim();
+
+    if (!name) { toast('Class name is required'); return; }
+
+    // Duplicate name check
+    const dup = Object.entries(state.classes).some(([cid, c]) =>
+      cid !== id && c.name.trim().toLowerCase() === name.toLowerCase() &&
+      (c.section || '').trim().toLowerCase() === section.toLowerCase()
+    );
+    if (dup) { toast('A class with this name and section already exists'); return; }
+
+    if (id && state.classes[id]) {
+      // Edit
+      state.classes[id] = {
+        ...state.classes[id],
+        name, grade, section, academicYear, description
+      };
+      addToQueue(`attendanceTracker/classes/${id}`, state.classes[id]);
+      toast('Class updated');
+    } else {
+      // Create
+      const newId = genId('class');
+      state.classes[newId] = {
+        id: newId, name, grade, section, academicYear, description,
+        createdAt: Date.now(), students: {}
+      };
+      addToQueue(`attendanceTracker/classes/${newId}`, state.classes[newId]);
+      state.selectedClassId = newId;
+      toast('Class created');
+    }
+    saveLocal();
+    closeClassModal();
+    renderClassGrid();
+    renderStudentPanel();
+  });
+
+  function deleteClass(cid) {
+    delete state.classes[cid];
+    if (state.selectedClassId === cid) state.selectedClassId = null;
+    saveLocal();
+    addToQueue(`attendanceTracker/classes/${cid}`, null, 'remove');
+    renderClassGrid();
+    $('#studentPanel').style.display = 'none';
+    toast('Class deleted');
+  }
+
+  // Edit / Delete selected class buttons
+  $('#editSelectedClassBtn').addEventListener('click', () => {
+    if (state.selectedClassId) openClassModal(state.selectedClassId);
+  });
+  $('#deleteSelectedClassBtn').addEventListener('click', () => {
+    const cid = state.selectedClassId;
+    if (!cid) return;
+    const c = state.classes[cid];
+    askConfirm('Delete class?',
+      `Delete "${c.name}" and all its students? This cannot be undone.`,
+      () => deleteClass(cid));
+  });
+
+  // ============================================================
+  // STUDENT CRUD
+  // ============================================================
+  function openStudentModal(sid = null) {
+    const cid = state.selectedClassId;
+    if (!cid) return;
+    const backdrop = $('#studentModalBackdrop');
+    const form = $('#studentForm');
+    form.reset();
+    $('#studentFormId').value = '';
+    $('#studentRollHint').textContent = 'Must be unique within this class.';
+
+    if (sid && state.classes[cid].students[sid]) {
+      const s = state.classes[cid].students[sid];
+      $('#studentModalTitle').textContent = 'Edit Student';
+      $('#studentFormId').value = sid;
+      $('#studentFormRoll').value = s.rollNumber || '';
+      $('#studentFormName').value = s.fullName || '';
+      $('#studentFormExtra').value = s.extra || '';
+    } else {
+      $('#studentModalTitle').textContent = 'Add Student';
+      // Auto-suggest next roll number
+      const rolls = Object.values(state.classes[cid].students || {})
+        .map(s => parseInt(s.rollNumber, 10))
+        .filter(n => !isNaN(n));
+      const next = rolls.length ? Math.max(...rolls) + 1 : 1;
+      $('#studentFormRoll').value = String(next);
+    }
+    backdrop.classList.add('open');
+    setTimeout(() => $('#studentFormName').focus(), 50);
+  }
+
+  function closeStudentModal() {
+    $('#studentModalBackdrop').classList.remove('open');
+  }
+
+  $('#openAddStudentModal').addEventListener('click', () => openStudentModal());
+  $('#closeStudentModal').addEventListener('click', closeStudentModal);
+  $('#cancelStudentModal').addEventListener('click', closeStudentModal);
+  $('#studentModalBackdrop').addEventListener('click', (e) => {
+    if (e.target === $('#studentModalBackdrop')) closeStudentModal();
+  });
+
+  $('#studentForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const cid = state.selectedClassId;
+    if (!cid) return;
+    const sid = $('#studentFormId').value;
+    const rollNumber = $('#studentFormRoll').value.trim();
+    const fullName = $('#studentFormName').value.trim();
+    const extra = $('#studentFormExtra').value.trim();
+
+    if (!rollNumber) { toast('Roll number is required'); return; }
+    if (!fullName) { toast('Full name is required'); return; }
+
+    // Duplicate roll number check within class
+    const students = state.classes[cid].students || {};
+    const dup = Object.entries(students).some(([id, s]) =>
+      id !== sid && (s.rollNumber || '').trim().toLowerCase() === rollNumber.toLowerCase()
+    );
+    if (dup) {
+      toast('A student with this roll number already exists in this class');
+      $('#studentFormRoll').focus();
+      return;
+    }
+
+    if (sid && students[sid]) {
+      // Edit
+      students[sid] = { ...students[sid], rollNumber, fullName, extra };
+      addToQueue(`attendanceTracker/classes/${cid}/students/${sid}`, students[sid]);
+      toast('Student updated');
+    } else {
+      // Create
+      const newSid = genId('student');
+      students[newSid] = {
+        id: newSid, rollNumber, fullName, extra, createdAt: Date.now()
+      };
+      state.classes[cid].students = students;
+      addToQueue(`attendanceTracker/classes/${cid}/students/${newSid}`, students[newSid]);
+      toast('Student added');
+    }
+    saveLocal();
+    closeStudentModal();
+    renderClassGrid();
+    renderStudentPanel();
+  });
+
+  function deleteStudent(cid, sid) {
+    if (!state.classes[cid] || !state.classes[cid].students[sid]) return;
+    delete state.classes[cid].students[sid];
+    saveLocal();
+    addToQueue(`attendanceTracker/classes/${cid}/students/${sid}`, null, 'remove');
+    renderClassGrid();
+    renderStudentPanel();
+    toast('Student removed');
+  }
+
+  // ============================================================
+  // CONFIRM DIALOG
+  // ============================================================
+  function askConfirm(title, message, onOk) {
+    $('#confirmTitle').textContent = title;
+    $('#confirmMessage').textContent = message;
+    state.confirmCallback = onOk;
+    $('#confirmModalBackdrop').classList.add('open');
+  }
+
+  $('#confirmCancelBtn').addEventListener('click', () => {
+    state.confirmCallback = null;
+    $('#confirmModalBackdrop').classList.remove('open');
+  });
+  $('#confirmOkBtn').addEventListener('click', () => {
+    const cb = state.confirmCallback;
+    state.confirmCallback = null;
+    $('#confirmModalBackdrop').classList.remove('open');
+    if (typeof cb === 'function') cb();
+  });
+  $('#confirmModalBackdrop').addEventListener('click', (e) => {
+    if (e.target === $('#confirmModalBackdrop')) {
+      state.confirmCallback = null;
+      $('#confirmModalBackdrop').classList.remove('open');
+    }
+  });
+
+  // ============================================================
+  // SEARCH + SORT
+  // ============================================================
+  $('#studentSearchInput').addEventListener('input', (e) => {
+    state.studentSearch = e.target.value;
+    renderStudentPanel();
+  });
+  $('#studentSortSelect').addEventListener('change', (e) => {
+    state.studentSort = e.target.value;
+    renderStudentPanel();
+  });
+
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  loadLocal();
+  renderClassGrid();
+  updateSyncStatus(navigator.onLine ? 'connecting' : 'offline');
+  listenClasses();
+  loadRemoteInitial();
+
+  window.addEventListener('online', () => attemptSync());
+  window.addEventListener('offline', () => updateSyncStatus('offline'));
+</script>
+</body>
+</html>

@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Attendance Tracker · Take Attendance</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* ---------- GLOBAL ---------- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      background: #f4f7fc;
+      color: #1e293b;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+    /* ---------- SIDEBAR ---------- */
+    .sidebar {
+      width: 260px;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      padding: 1.8rem 1rem;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 20;
+    }
+    .sidebar h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #0f3b5e;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      padding-left: 0.5rem;
+    }
+    .sidebar h1 i { color: #2a7faa; font-size: 1.6rem; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.8rem 1rem;
+      border-radius: 10px;
+      color: #475569;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 0.3rem;
+      transition: background 0.15s, color 0.15s;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+    .nav-item i { width: 20px; color: #5b8db8; }
+    .nav-item.active { background: #e6f0f9; color: #0b3b5c; font-weight: 600; }
+    .nav-item.active i { color: #1e6f9f; }
+    .nav-item:hover:not(.active) { background: #f1f5f9; }
+    .sync-status {
+      margin-top: auto;
+      font-size: 0.8rem;
+      padding: 1rem 0.8rem;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #3b5e7e;
+      word-break: break-word;
+    }
+    .sync-online { color: #0a7e4e; }
+    .sync-offline { color: #b45309; }
+    .sync-error { color: #b91c1c; }
+    .sync-pending { color: #b45309; }
+
+    /* ---------- MAIN ---------- */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.8rem 2rem;
+      height: 100vh;
+      background: #f4f7fc;
+    }
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #0f3b5e;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.01em;
+    }
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #1e4a6b;
+      margin-bottom: 1rem;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 1.5rem;
+      box-shadow: 0 6px 18px rgba(0, 20, 40, 0.04);
+      border: 1px solid #e9eef3;
+      margin-bottom: 1.5rem;
+    }
+    .btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: #1e293b;
+      cursor: pointer;
+      transition: 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn i { font-size: 0.9rem; }
+    .btn:hover { background: #f8fafc; border-color: #94a3b8; }
+    .btn-primary { background: #1e6f9f; border-color: #1e6f9f; color: white; }
+    .btn-primary:hover { background: #155a82; border-color: #155a82; }
+    .btn-danger { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-success { background: #dcfce7; border-color: #bbf7d0; color: #0a7e4e; }
+    .btn-success:hover { background: #bbf7d0; }
+    .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
+    .flex-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; }
+    .flex-between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.8rem; }
+    input, select {
+      padding: 0.7rem 0.9rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background: white;
+      transition: 0.1s;
+      width: 100%;
+    }
+    input:focus, select:focus { outline: 2px solid #7fb4d4; border-color: transparent; }
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; }
+    .form-group label { font-size: 0.85rem; font-weight: 500; color: #334155; }
+    .text-muted { color: #64748b; }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-present { background: #dcfce7; color: #0a7e4e; }
+    .badge-absent { background: #fee2e2; color: #b91c1c; }
+    .badge-unmarked { background: #f1f5f9; color: #64748b; }
+    .badge-info { background: #e0f2fe; color: #0369a1; }
+
+    /* ---------- ATTENDANCE CARD ---------- */
+    .attendance-stage {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .attendance-card {
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 2rem 1.8rem;
+      box-shadow: 0 20px 50px rgba(0, 30, 60, 0.08);
+      border: 1px solid #dce9f2;
+      position: relative;
+      overflow: hidden;
+    }
+    .attendance-card .status-banner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: #e2e8f0;
+      transition: background 0.2s;
+    }
+    .attendance-card .status-banner.present { background: #22c55e; }
+    .attendance-card .status-banner.absent { background: #ef4444; }
+    .attendance-card .student-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .attendance-card .student-name {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #0b3b5c;
+      line-height: 1.15;
+      word-break: break-word;
+    }
+    .attendance-card .student-meta {
+      color: #5b7b9a;
+      font-size: 0.95rem;
+      margin: 0.7rem 0 1.5rem 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.2rem;
+    }
+    .attendance-card .student-meta span { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .attendance-card .student-meta i { color: #94a3b8; font-size: 0.85rem; }
+
+    .progress-block { margin-bottom: 1.5rem; }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 0.4rem;
+    }
+    .progress-bar {
+      height: 8px;
+      background: #eef2f6;
+      border-radius: 30px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #1e6f9f);
+      border-radius: 30px;
+      transition: width 0.25s;
+    }
+    .counters {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+      margin-bottom: 1.8rem;
+    }
+    .counter {
+      background: #f8fafc;
+      border: 1px solid #e9eef3;
+      border-radius: 14px;
+      padding: 0.7rem 0.5rem;
+      text-align: center;
+    }
+    .counter .num { font-size: 1.4rem; font-weight: 700; }
+    .counter .lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; font-weight: 600; margin-top: 0.15rem; }
+    .counter.present .num { color: #0a7e4e; }
+    .counter.absent .num { color: #b91c1c; }
+    .counter.waiting .num { color: #64748b; }
+
+    .attendance-actions {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .btn-present, .btn-absent {
+      flex: 1 1 0;
+      padding: 1.1rem 0.8rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: transform 0.08s, background 0.15s;
+    }
+    .btn-present:active, .btn-absent:active { transform: scale(0.97); }
+    .btn-present {
+      background: #dcfce7;
+      color: #0a6b44;
+      border: 1px solid #bae5cd;
+    }
+    .btn-present:hover { background: #c3f2d5; }
+    .btn-absent {
+      background: #fee2e2;
+      color: #a12b2b;
+      border: 1px solid #f5c6c6;
+    }
+    .btn-absent:hover { background: #fccfcf; }
+    .btn-present:disabled, .btn-absent:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.6rem;
+    }
+
+    /* ---------- COMPLETION SCREEN ---------- */
+    .completion-card {
+      max-width: 560px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 2.5rem 2rem;
+    }
+    .completion-icon {
+      width: 76px; height: 76px;
+      border-radius: 50%;
+      background: #dcfce7;
+      color: #0a7e4e;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 1.2rem auto;
+    }
+    .completion-title { font-size: 1.6rem; font-weight: 700; color: #0f3b5e; margin-bottom: 0.4rem; }
+    .completion-sub { color: #64748b; margin-bottom: 1.8rem; }
+    .completion-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.8rem;
+      margin-bottom: 2rem;
+    }
+    .completion-stats .counter { padding: 1rem 0.5rem; }
+    .completion-actions { display: flex; justify-content: center; gap: 0.7rem; flex-wrap: wrap; }
+
+    /* ---------- HISTORY TABLE ---------- */
+    .mini-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.8rem; }
+    .mini-table th { text-align: left; padding: 0.5rem 0.4rem; background: #f1f6fa; color: #1e4a6b; font-weight: 600; border-bottom: 1px solid #d9e2ec; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .mini-table td { padding: 0.5rem 0.4rem; border-bottom: 1px solid #eef2f6; }
+    .mini-table tr:last-child td { border-bottom: none; }
+
+    /* ---------- MODAL ---------- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 30, 45, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 18px;
+      padding: 1.8rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 24px 60px rgba(0, 20, 40, 0.25);
+    }
+    .modal h3 { margin-bottom: 0.8rem; }
+    .modal p { color: #475569; font-size: 0.92rem; line-height: 1.5; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 0.7rem; margin-top: 1.5rem; }
+
+    /* ---------- MOBILE NAV ---------- */
+    .mobile-nav {
+      display: none;
+      background: white;
+      border-top: 1px solid #e2e8f0;
+      position: fixed;
+      bottom: 0; left: 0; width: 100%;
+      z-index: 30;
+      padding: 0.5rem 0.3rem;
+      justify-content: space-around;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
+    }
+    .mobile-nav-item {
+      background: transparent;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.65rem;
+      color: #64748b;
+      padding: 0.3rem 0.2rem;
+      border-radius: 12px;
+      gap: 0.2rem;
+    }
+    .mobile-nav-item i { font-size: 1.2rem; }
+    .mobile-nav-item.active { color: #1e6f9f; font-weight: 600; }
+
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f3b5e;
+      color: white;
+      padding: 0.7rem 1.4rem;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+      box-shadow: 0 8px 24px rgba(0, 20, 40, 0.2);
+      text-align: center;
+      max-width: 90vw;
+    }
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main-content { padding: 1.2rem 1rem 5rem 1rem; }
+      .mobile-nav { display: flex; }
+      h2 { font-size: 1.5rem; }
+      .attendance-card { padding: 1.5rem 1.2rem; }
+      .attendance-card .student-name { font-size: 1.75rem; }
+      .btn-present, .btn-absent { font-size: 1.1rem; padding: 0.9rem 0.5rem; }
+      .counters { grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+      .counter .num { font-size: 1.2rem; }
+      .counter .lbl { font-size: 0.6rem; }
+      .completion-stats { grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <h1><i class="fas fa-clipboard-check"></i> AttendTrack</h1>
+  <a class="nav-item" href="home.html" data-page="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a class="nav-item" href="classes.html" data-page="classes"><i class="fas fa-school"></i> Classes</a>
+  <a class="nav-item active" href="#" data-page="takeAttendance"><i class="fas fa-user-check"></i> Take Attendance</a>
+  <a class="nav-item" href="record.html" data-page="records"><i class="fas fa-table"></i> Records</a>
+  <a class="nav-item" href="report.html" data-page="reports"><i class="fas fa-file-alt"></i> Reports</a>
+  
+  <div class="sync-status" id="syncStatusSidebar">
+    <i class="fas fa-circle-notch fa-spin"></i> <span>Connecting…</span>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+
+  <section id="page-takeAttendance">
+    <h2>Take Attendance</h2>
+
+    <!-- Session setup (hidden once session active) -->
+    <div class="card" id="setupCard">
+      <h3><i class="fas fa-play-circle"></i> Start a new session</h3>
+      <div class="flex-row">
+        <div class="form-group" style="flex:2; min-width:200px; margin-bottom:0;">
+          <label for="attendanceClassSelect">Class</label>
+          <select id="attendanceClassSelect"></select>
+        </div>
+        <div class="form-group" style="flex:1; min-width:150px; margin-bottom:0;">
+          <label for="attendanceDate">Date</label>
+          <input type="date" id="attendanceDate">
+        </div>
+        <button class="btn btn-primary" id="startAttendanceBtn" style="align-self:flex-end;">
+          <i class="fas fa-play"></i> Start
+        </button>
+      </div>
+      <p class="text-muted" style="margin-top:1rem; font-size:0.85rem;">
+        <i class="fas fa-info-circle"></i>
+        A session shows one student at a time. If you reload the page, an unfinished session will be restored automatically.
+      </p>
+    </div>
+
+    <!-- Active session stage -->
+    <div id="sessionStage" style="display:none;">
+      <div class="attendance-stage" id="attendanceStage"></div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav">
+  <a class="mobile-nav-item" href="home.html" data-page="dashboard"><i class="fas fa-chart-pie"></i> Home</a>
+  <a class="mobile-nav-item" href="classes.html" data-page="classes"><i class="fas fa-school"></i> Classes</a>
+  <a class="mobile-nav-item active" href="#" data-page="takeAttendance"><i class="fas fa-user-check"></i> Attend</a>
+  <a class="mobile-nav-item" href="record.html" data-page="records"><i class="fas fa-table"></i> Records</a>
+  <a class="mobile-nav-item" href="report.html" data-page="reports"><i class="fas fa-file-alt"></i> Reports</a>
+</nav>
+
+<!-- Confirm modal -->
+<div class="modal-backdrop" id="confirmModalBackdrop">
+  <div class="modal">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmMessage">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="confirmCancelBtn">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirmOkBtn">Continue</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  // ============================================================
+  // FIREBASE
+  // ============================================================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import {
+    getDatabase, ref, set, onValue, get, remove
+  } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBV4mq7IO9ubmW6m1RIvbNRa1g9IVr25k8",
+    authDomain: "attendance-taker-ee32b.firebaseapp.com",
+    databaseURL: "https://attendance-taker-ee32b-default-rtdb.firebaseio.com",
+    projectId: "attendance-taker-ee32b",
+    storageBucket: "attendance-taker-ee32b.firebasestorage.app",
+    messagingSenderId: "22851789508",
+    appId: "1:22851789508:web:d2a3e773eb3a29b5385f91",
+    measurementId: "G-0P6QWMLB2G"
+  };
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  const state = {
+    classes: {},                 // classId -> { name, grade, section, academicYear, students: { sid: { rollNumber, fullName, extra } } }
+    attendance: {},              // classId -> date -> sid -> { status, timestamp }
+    session: null,               // { classId, date, studentIds: [], currentIndex, completed: boolean, startedAt }
+    pendingQueue: [],
+    syncStatus: 'connecting',
+    confirmCallback: null
+  };
+
+  const LS_CLASSES = 'attendanceTracker_classes';
+  const LS_ATTENDANCE = 'attendanceTracker_attendance';
+  const LS_QUEUE = 'attendanceTracker_queue';
+  const LS_SESSION = 'attendanceTracker_session';
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+  }
+
+  function genId(prefix) {
+    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function todayISO() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function formatDatePretty(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    const dt = new Date(Number(y), Number(m) - 1, Number(d));
+    return dt.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // ============================================================
+  // LOCAL STORAGE
+  // ============================================================
+  function loadLocal() {
+    try {
+      const c = localStorage.getItem(LS_CLASSES);
+      if (c) state.classes = JSON.parse(c);
+      const a = localStorage.getItem(LS_ATTENDANCE);
+      if (a) state.attendance = JSON.parse(a);
+      const q = localStorage.getItem(LS_QUEUE);
+      if (q) state.pendingQueue = JSON.parse(q);
+      const s = localStorage.getItem(LS_SESSION);
+      if (s) state.session = JSON.parse(s);
+    } catch (e) { console.warn('Local parse error', e); }
+  }
+
+  function saveLocal() {
+    localStorage.setItem(LS_CLASSES, JSON.stringify(state.classes));
+    localStorage.setItem(LS_ATTENDANCE, JSON.stringify(state.attendance));
+    localStorage.setItem(LS_QUEUE, JSON.stringify(state.pendingQueue));
+    if (state.session) localStorage.setItem(LS_SESSION, JSON.stringify(state.session));
+    else localStorage.removeItem(LS_SESSION);
+  }
+
+  // ============================================================
+  // SYNC QUEUE
+  // ============================================================
+  function addToQueue(path, data, action = 'set') {
+    state.pendingQueue.push({ id: genId('q'), path, data, action, timestamp: Date.now() });
+    saveLocal();
+    updateSyncStatus('pending');
+    attemptSync();
+  }
+
+  async function attemptSync() {
+    if (!navigator.onLine) { updateSyncStatus('offline'); return; }
+    if (state.pendingQueue.length === 0) { updateSyncStatus('online'); return; }
+    updateSyncStatus('pending');
+    for (let i = 0; i < state.pendingQueue.length; i++) {
+      const item = state.pendingQueue[i];
+      try {
+        if (item.action === 'set') await set(ref(database, item.path), item.data);
+        else if (item.action === 'remove') await remove(ref(database, item.path));
+        state.pendingQueue.splice(i, 1);
+        i--;
+        saveLocal();
+      } catch (err) {
+        console.warn('Sync failed', err);
+        updateSyncStatus('error');
+        return;
+      }
+    }
+    updateSyncStatus('online');
+    saveLocal();
+  }
+
+  function updateSyncStatus(status) {
+    state.syncStatus = status;
+    const el = $('#syncStatusSidebar');
+    if (!el) return;
+    const map = {
+      online:    { icon: 'fa-cloud-upload-alt', text: 'Online · synced', cls: 'sync-online' },
+      offline:   { icon: 'fa-wifi', text: 'Offline — saved locally', cls: 'sync-offline' },
+      pending:   { icon: 'fa-spinner fa-pulse', text: 'Syncing…', cls: 'sync-pending' },
+      error:     { icon: 'fa-exclamation-triangle', text: 'Sync error — will retry', cls: 'sync-error' },
+      connecting:{ icon: 'fa-circle-notch fa-spin', text: 'Connecting…', cls: '' }
+    };
+    const m = map[status] || map.connecting;
+    el.innerHTML = `<i class="fas ${m.icon}"></i> <span>${m.text}</span>`;
+    el.className = 'sync-status ' + m.cls;
+  }
+
+  // ============================================================
+  // FIREBASE LISTENERS
+  // ============================================================
+  function listenClasses() {
+    onValue(ref(database, 'attendanceTracker/classes'), (snap) => {
+      if (snap.exists()) {
+        const remote = snap.val();
+        const merged = { ...state.classes };
+        Object.keys(remote).forEach(cid => {
+          const r = remote[cid];
+          const local = merged[cid] || {};
+          merged[cid] = {
+            ...local,
+            ...r,
+            students: { ...(local.students || {}), ...(r.students || {}) }
+          };
+        });
+        state.classes = merged;
+        saveLocal();
+        populateClassSelect();
+      }
+      updateSyncStatus('online');
+    }, (err) => { console.warn('classes listener', err); updateSyncStatus('offline'); });
+  }
+
+  function listenAttendance() {
+    onValue(ref(database, 'attendanceTracker/attendance'), (snap) => {
+      if (snap.exists()) {
+        state.attendance = snap.val();
+        saveLocal();
+        if (state.session && !state.session.completed) renderSession();
+      }
+      updateSyncStatus('online');
+    }, (err) => { console.warn('attendance listener', err); updateSyncStatus('offline'); });
+  }
+
+  async function loadRemoteInitial() {
+    try {
+      const cSnap = await get(ref(database, 'attendanceTracker/classes'));
+      if (cSnap.exists()) {
+        const remote = cSnap.val();
+        const merged = { ...state.classes };
+        Object.keys(remote).forEach(cid => {
+          const r = remote[cid];
+          const local = merged[cid] || {};
+          merged[cid] = {
+            ...local, ...r,
+            students: { ...(local.students || {}), ...(r.students || {}) }
+          };
+        });
+        state.classes = merged;
+      }
+      const aSnap = await get(ref(database, 'attendanceTracker/attendance'));
+      if (aSnap.exists()) state.attendance = aSnap.val();
+      saveLocal();
+      updateSyncStatus('online');
+    } catch (err) {
+      console.warn('initial load failed', err);
+      updateSyncStatus('offline');
+    }
+  }
+
+  // ============================================================
+  // SETUP UI
+  // ============================================================
+  function populateClassSelect() {
+    const sel = $('#attendanceClassSelect');
+    const previous = sel.value;
+    const ids = Object.keys(state.classes);
+    sel.innerHTML = '<option value="">— Select a class —</option>' +
+      ids.map(cid => {
+        const c = state.classes[cid];
+        const label = [c.name, c.section].filter(Boolean).join(' · ');
+        return `<option value="${cid}">${escapeHtml(label)}</option>`;
+      }).join('');
+    if (previous && state.classes[previous]) sel.value = previous;
+    if (ids.length === 0) {
+      sel.innerHTML = '<option value="">No classes available — create one first</option>';
+    }
+  }
+
+  $('#attendanceDate').value = todayISO();
+
+  $('#startAttendanceBtn').addEventListener('click', () => {
+    const classId = $('#attendanceClassSelect').value;
+    const date = $('#attendanceDate').value;
+    if (!classId) { toast('Please select a class'); return; }
+    if (!date) { toast('Please select a date'); return; }
+
+    const students = state.classes[classId]?.students || {};
+    const studentIds = Object.keys(students);
+    if (studentIds.length === 0) { toast('This class has no students'); return; }
+
+    // If there is already an unfinished session for the same class + date, resume it
+    if (state.session && !state.session.completed &&
+        state.session.classId === classId && state.session.date === date) {
+      toast('Resuming existing session');
+      showSessionStage();
+      renderSession();
+      return;
+    }
+
+    // If an unfinished session exists for a DIFFERENT class/date, confirm replacing it
+    const startFresh = () => {
+      state.session = {
+        classId, date,
+        studentIds: studentIds.slice(),
+        currentIndex: 0,
+        completed: false,
+        startedAt: Date.now()
+      };
+      saveLocal();
+      showSessionStage();
+      renderSession();
+    };
+
+    if (state.session && !state.session.completed) {
+      askConfirm(
+        'Replace unfinished session?',
+        'You have an unfinished session in progress. Starting a new one will discard its progress.',
+        startFresh
+      );
+    } else {
+      startFresh();
+    }
+  });
+
+  function showSessionStage() {
+    $('#setupCard').style.display = 'none';
+    $('#sessionStage').style.display = 'block';
+  }
+
+  function showSetupStage() {
+    $('#sessionStage').style.display = 'none';
+    $('#setupCard').style.display = 'block';
+  }
+
+  // ============================================================
+  // SESSION RENDERING
+  // ============================================================
+  function getSessionAttendance(classId, date) {
+    return state.attendance[classId]?.[date] || {};
+  }
+
+  function computeCounts() {
+    const sess = state.session;
+    const day = getSessionAttendance(sess.classId, sess.date);
+    let present = 0, absent = 0, waiting = 0;
+    sess.studentIds.forEach(sid => {
+      const rec = day[sid];
+      if (rec?.status === 'present') present++;
+      else if (rec?.status === 'absent') absent++;
+      else waiting++;
+    });
+    return { present, absent, waiting, total: sess.studentIds.length };
+  }
+
+  function renderSession() {
+    const sess = state.session;
+    if (!sess) { showSetupStage(); return; }
+    showSessionStage();
+
+    if (sess.completed) { renderCompletion(); return; }
+
+    const stage = $('#attendanceStage');
+    const students = state.classes[sess.classId]?.students || {};
+    const cls = state.classes[sess.classId] || {};
+
+    // Skip over already-marked students when advancing automatically
+    // (we do NOT auto-skip on load — the user resumes where they left off,
+    //  but on marking we move to the next UNMARKED student.)
+    if (sess.currentIndex >= sess.studentIds.length) {
+      sess.completed = true;
+      saveLocal();
+      renderCompletion();
+      return;
+    }
+
+    const sid = sess.studentIds[sess.currentIndex];
+    const student = students[sid];
+    if (!student) {
+      // Student was deleted — skip forward safely
+      sess.currentIndex++;
+      saveLocal();
+      renderSession();
+      return;
+    }
+
+    const counts = computeCounts();
+    const day = getSessionAttendance(sess.classId, sess.date);
+    const currentStatus = day[sid]?.status || null;
+    const progressPct = Math.round((sess.currentIndex / sess.studentIds.length) * 100);
+    const classLabel = [cls.name, cls.section].filter(Boolean).join(' · ');
+
+    stage.innerHTML = `
+      <div class="attendance-card">
+        <div class="status-banner ${currentStatus || ''}"></div>
+
+        <div class="student-label">Now marking</div>
+        <div class="student-name">${escapeHtml(student.fullName)}</div>
+        <div class="student-meta">
+          <span><i class="fas fa-hashtag"></i> ${escapeHtml(student.rollNumber || '—')}</span>
+          <span><i class="fas fa-school"></i> ${escapeHtml(classLabel)}</span>
+          <span><i class="fas fa-calendar"></i> ${formatDatePretty(sess.date)}</span>
+        </div>
+
+        <div class="progress-block">
+          <div class="progress-header">
+            <span>Student ${sess.currentIndex + 1} of ${sess.studentIds.length}</span>
+            <span>${progressPct}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-bar-fill" style="width:${progressPct}%"></div></div>
+        </div>
+
+        <div class="counters">
+          <div class="counter present"><div class="num">${counts.present}</div><div class="lbl">Present</div></div>
+          <div class="counter absent"><div class="num">${counts.absent}</div><div class="lbl">Absent</div></div>
+          <div class="counter waiting"><div class="num">${counts.waiting}</div><div class="lbl">Waiting</div></div>
+        </div>
+
+        <div class="attendance-actions">
+          <button class="btn-present" id="markPresentBtn" ${currentStatus === 'present' ? 'disabled' : ''}>
+            <i class="fas fa-check"></i> Present
+          </button>
+          <button class="btn-absent" id="markAbsentBtn" ${currentStatus === 'absent' ? 'disabled' : ''}>
+            <i class="fas fa-times"></i> Absent
+          </button>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn" id="prevBtn" ${sess.currentIndex === 0 ? 'disabled' : ''}>
+            <i class="fas fa-arrow-left"></i> Previous
+          </button>
+          <button class="btn" id="skipBtn">
+            Skip <i class="fas fa-arrow-right"></i>
+          </button>
+          <button class="btn" id="finishBtn">
+            <i class="fas fa-flag-checkered"></i> Finish
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Mark present
+    $('#markPresentBtn').addEventListener('click', () => {
+      markAndAdvance('present');
+    });
+    // Mark absent
+    $('#markAbsentBtn').addEventListener('click', () => {
+      markAndAdvance('absent');
+    });
+    // Previous
+    $('#prevBtn').addEventListener('click', () => {
+      if (sess.currentIndex > 0) {
+        sess.currentIndex--;
+        saveLocal();
+        renderSession();
+      }
+    });
+    // Skip (leave unmarked)
+    $('#skipBtn').addEventListener('click', () => {
+      sess.currentIndex++;
+      saveLocal();
+      renderSession();
+    });
+    // Finish early
+    $('#finishBtn').addEventListener('click', () => {
+      const counts = computeCounts();
+      askConfirm(
+        'Finish session early?',
+        counts.waiting > 0
+          ? `${counts.waiting} student(s) are still unmarked. They will stay unmarked (not counted as absent).`
+          : 'All students have been marked. Complete the session?',
+        () => {
+          sess.completed = true;
+          saveLocal();
+          renderCompletion();
+        }
+      );
+    });
+  }
+
+  function markAndAdvance(status) {
+    const sess = state.session;
+    const sid = sess.studentIds[sess.currentIndex];
+
+    // Save attendance record
+    if (!state.attendance[sess.classId]) state.attendance[sess.classId] = {};
+    if (!state.attendance[sess.classId][sess.date]) state.attendance[sess.classId][sess.date] = {};
+    state.attendance[sess.classId][sess.date][sid] = {
+      status,
+      timestamp: Date.now()
+    };
+    saveLocal();
+
+    // Queue for Firebase (stable key prevents duplicates — re-marking updates same node)
+    addToQueue(
+      `attendanceTracker/attendance/${sess.classId}/${sess.date}/${sid}`,
+      state.attendance[sess.classId][sess.date][sid]
+    );
+
+    // Advance to next UNMARKED student after this one; if none, complete
+    let next = sess.currentIndex + 1;
+    const day = getSessionAttendance(sess.classId, sess.date);
+    while (next < sess.studentIds.length && day[sess.studentIds[next]]) {
+      next++;
+    }
+    if (next >= sess.studentIds.length) {
+      // Check if every student is now marked
+      const allMarked = sess.studentIds.every(id => day[id]);
+      if (allMarked) {
+        sess.completed = true;
+        saveLocal();
+        renderCompletion();
+        return;
+      }
+      // Otherwise there are unmarked students earlier — just advance normally
+      sess.currentIndex++;
+    } else {
+      sess.currentIndex = next;
+    }
+    saveLocal();
+    renderSession();
+  }
+
+  function renderCompletion() {
+    const sess = state.session;
+    const stage = $('#attendanceStage');
+    const counts = computeCounts();
+    const cls = state.classes[sess.classId] || {};
+    const classLabel = [cls.name, cls.section].filter(Boolean).join(' · ');
+    const day = getSessionAttendance(sess.classId, sess.date);
+
+    // Build a full summary list
+    const students = cls.students || {};
+    const rows = sess.studentIds.map(sid => {
+      const s = students[sid];
+      const rec = day[sid];
+      const status = rec?.status || 'unmarked';
+      const badgeCls = status === 'present' ? 'badge-present' : status === 'absent' ? 'badge-absent' : 'badge-unmarked';
+      return `<tr>
+        <td>${escapeHtml(s?.rollNumber || '—')}</td>
+        <td>${escapeHtml(s?.fullName || 'Unknown')}</td>
+        <td><span class="badge ${badgeCls}">${status}</span></td>
+      </tr>`;
+    }).join('');
+
+    stage.innerHTML = `
+      <div class="attendance-card completion-card">
+        <div class="completion-icon"><i class="fas fa-check"></i></div>
+        <div class="completion-title">Session complete!</div>
+        <div class="completion-sub">${escapeHtml(classLabel)} · ${formatDatePretty(sess.date)}</div>
+
+        <div class="completion-stats">
+          <div class="counter present"><div class="num">${counts.present}</div><div class="lbl">Present</div></div>
+          <div class="counter absent"><div class="num">${counts.absent}</div><div class="lbl">Absent</div></div>
+          <div class="counter waiting"><div class="num">${counts.waiting}</div><div class="lbl">Unmarked</div></div>
+        </div>
+
+        <div style="text-align:left; margin-bottom:1.5rem;">
+          <h3 style="font-size:1rem; margin-bottom:0.4rem;">Summary</h3>
+          <div style="max-height:260px; overflow-y:auto; border:1px solid #e9eef3; border-radius:12px;">
+            <table class="mini-table">
+              <thead><tr><th>Roll / ID</th><th>Name</th><th>Status</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="completion-actions">
+          <button class="btn btn-primary" id="newSessionBtn"><i class="fas fa-plus"></i> New session</button>
+          <button class="btn" id="reviewSessionBtn"><i class="fas fa-arrow-left"></i> Review & edit</button>
+        </div>
+      </div>
+    `;
+
+    $('#newSessionBtn').addEventListener('click', () => {
+      state.session = null;
+      saveLocal();
+      showSetupStage();
+      populateClassSelect();
+    });
+
+    $('#reviewSessionBtn').addEventListener('click', () => {
+      // Reopen the session for editing
+      state.session.completed = false;
+      // Jump to the first student (or first unmarked if any)
+      const day2 = getSessionAttendance(sess.classId, sess.date);
+      let idx = sess.studentIds.findIndex(id => !day2[id]);
+      if (idx === -1) idx = 0;
+      sess.currentIndex = idx;
+      saveLocal();
+      renderSession();
+    });
+  }
+
+  // ============================================================
+  // CONFIRM DIALOG
+  // ============================================================
+  function askConfirm(title, message, onOk) {
+    $('#confirmTitle').textContent = title;
+    $('#confirmMessage').textContent = message;
+    state.confirmCallback = onOk;
+    $('#confirmModalBackdrop').classList.add('open');
+  }
+  $('#confirmCancelBtn').addEventListener('click', () => {
+    state.confirmCallback = null;
+    $('#confirmModalBackdrop').classList.remove('open');
+  });
+  $('#confirmOkBtn').addEventListener('click', () => {
+    const cb = state.confirmCallback;
+    state.confirmCallback = null;
+    $('#confirmModalBackdrop').classList.remove('open');
+    if (typeof cb === 'function') cb();
+  });
+  $('#confirmModalBackdrop').addEventListener('click', (e) => {
+    if (e.target === $('#confirmModalBackdrop')) {
+      state.confirmCallback = null;
+      $('#confirmModalBackdrop').classList.remove('open');
+    }
+  });
+
+  // ============================================================
+  // NAV (this standalone page keeps its own focus)
+  // ============================================================
+  $$('.nav-item, .mobile-nav-item').forEach(el => {
+    el.addEventListener('click', () => {
+      if (el.dataset.page !== 'takeAttendance') {
+        toast('This page is part of the full app. Take Attendance is shown.');
+      }
+    });
+  });
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  loadLocal();
+  populateClassSelect();
+  updateSyncStatus(navigator.onLine ? 'connecting' : 'offline');
+
+  listenClasses();
+  listenAttendance();
+  loadRemoteInitial();
+
+  // Restore unfinished session on load
+  setTimeout(() => {
+    if (state.session && !state.session.completed && state.classes[state.session.classId]) {
+      // Make sure the class still has the students
+      const students = state.classes[state.session.classId].students || {};
+      const validIds = state.session.studentIds.filter(id => students[id]);
+      if (validIds.length === 0) {
+        state.session = null;
+        saveLocal();
+        return;
+      }
+      if (validIds.length !== state.session.studentIds.length) {
+        state.session.studentIds = validIds;
+        if (state.session.currentIndex >= validIds.length) state.session.currentIndex = 0;
+        saveLocal();
+      }
+      showSessionStage();
+      renderSession();
+      toast('Resumed unfinished session');
+    }
+  }, 400);
+
+  window.addEventListener('online', () => attemptSync());
+  window.addEventListener('offline', () => updateSyncStatus('offline'));
+</script>
+</body>
+</html>

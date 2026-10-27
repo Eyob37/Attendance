@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Attendance Tracker · Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* ---------- GLOBAL ---------- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      background: #f4f7fc;
+      color: #1e293b;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+    /* ---------- SIDEBAR ---------- */
+    .sidebar {
+      width: 260px;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      padding: 1.8rem 1rem;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 20;
+    }
+    .sidebar h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #0f3b5e;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      padding-left: 0.5rem;
+    }
+    .sidebar h1 i { color: #2a7faa; font-size: 1.6rem; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.8rem 1rem;
+      border-radius: 10px;
+      color: #475569;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 0.3rem;
+      transition: background 0.15s, color 0.15s;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+    .nav-item i { width: 20px; color: #5b8db8; }
+    .nav-item.active { background: #e6f0f9; color: #0b3b5c; font-weight: 600; }
+    .nav-item.active i { color: #1e6f9f; }
+    .nav-item:hover:not(.active) { background: #f1f5f9; }
+    .sync-status {
+      margin-top: auto;
+      font-size: 0.8rem;
+      padding: 1rem 0.8rem;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #3b5e7e;
+      word-break: break-word;
+    }
+    .sync-online { color: #0a7e4e; }
+    .sync-offline { color: #b45309; }
+    .sync-error { color: #b91c1c; }
+    .sync-pending { color: #b45309; }
+
+    /* ---------- MAIN ---------- */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.8rem 2rem;
+      height: 100vh;
+      background: #f4f7fc;
+    }
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #0f3b5e;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.01em;
+    }
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #1e4a6b;
+      margin-bottom: 1rem;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 1.5rem;
+      box-shadow: 0 6px 18px rgba(0, 20, 40, 0.04);
+      border: 1px solid #e9eef3;
+      margin-bottom: 1.5rem;
+    }
+    .btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: #1e293b;
+      cursor: pointer;
+      transition: 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      text-decoration: none;
+    }
+    .btn i { font-size: 0.9rem; }
+    .btn:hover { background: #f8fafc; border-color: #94a3b8; }
+    .btn-primary { background: #1e6f9f; border-color: #1e6f9f; color: white; }
+    .btn-primary:hover { background: #155a82; border-color: #155a82; }
+    .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
+    .flex-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; }
+    .flex-between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.8rem; }
+    .text-muted { color: #64748b; }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-present { background: #dcfce7; color: #0a7e4e; }
+    .badge-absent { background: #fee2e2; color: #b91c1c; }
+    .badge-unmarked { background: #f1f5f9; color: #64748b; }
+    .badge-info { background: #e0f2fe; color: #0369a1; }
+
+    /* ---------- WELCOME BANNER ---------- */
+    .welcome-banner {
+      background: linear-gradient(135deg, #1e6f9f 0%, #2a7faa 60%, #3d94c0 100%);
+      color: white;
+      border-radius: 20px;
+      padding: 1.8rem 2rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      box-shadow: 0 12px 32px rgba(30, 111, 159, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .welcome-banner::after {
+      content: '';
+      position: absolute;
+      right: -40px;
+      top: -40px;
+      width: 220px;
+      height: 220px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .welcome-banner .wb-text { position: relative; z-index: 1; }
+    .welcome-banner .wb-greeting {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.85;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .welcome-banner .wb-title {
+      font-size: 1.65rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .welcome-banner .wb-sub {
+      font-size: 0.92rem;
+      opacity: 0.9;
+      margin-top: 0.35rem;
+    }
+    .welcome-banner .wb-actions {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .welcome-banner .btn {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      color: white;
+      backdrop-filter: blur(4px);
+    }
+    .welcome-banner .btn:hover { background: rgba(255,255,255,0.28); }
+    .welcome-banner .btn-primary {
+      background: white;
+      color: #1e6f9f;
+      border-color: white;
+      font-weight: 600;
+    }
+    .welcome-banner .btn-primary:hover { background: #f1f6fa; }
+
+    /* ---------- STATS GRID ---------- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 1.2rem 1.2rem 1.1rem 1.2rem;
+      border: 1px solid #e2e8f0;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0, 30, 60, 0.06); }
+    .stat-card .stat-icon {
+      width: 38px; height: 38px;
+      border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      margin-bottom: 0.8rem;
+    }
+    .stat-card .stat-label {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .stat-card .stat-number {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: #0b3b5c;
+      margin-top: 0.2rem;
+      line-height: 1.1;
+    }
+    .stat-card .stat-sub {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-top: 0.35rem;
+    }
+    .stat-card.classes .stat-icon { background: #e6f0f9; color: #1e6f9f; }
+    .stat-card.students .stat-icon { background: #ede9fe; color: #6d28d9; }
+    .stat-card.present .stat-icon { background: #dcfce7; color: #0a7e4e; }
+    .stat-card.absent .stat-icon { background: #fee2e2; color: #b91c1c; }
+    .stat-card.rate .stat-icon { background: #e0f2fe; color: #0369a1; }
+
+    .stat-card.rate .stat-ring {
+      position: absolute;
+      right: 1rem;
+      bottom: 1rem;
+      width: 46px; height: 46px;
+    }
+    .stat-ring svg { transform: rotate(-90deg); }
+    .stat-ring .ring-bg { fill: none; stroke: #eef2f6; stroke-width: 5; }
+    .stat-ring .ring-fg { fill: none; stroke: #1e6f9f; stroke-width: 5; stroke-linecap: round; transition: stroke-dasharray 0.5s; }
+
+    /* ---------- QUICK ACTIONS ---------- */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.8rem;
+    }
+    .quick-action {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 1rem;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      background: #fbfdff;
+      text-decoration: none;
+      color: #1e293b;
+      transition: 0.15s;
+      cursor: pointer;
+    }
+    .quick-action:hover {
+      background: white;
+      border-color: #94b8d4;
+      box-shadow: 0 6px 16px rgba(0, 30, 60, 0.06);
+    }
+    .quick-action .qa-icon {
+      width: 40px; height: 40px;
+      border-radius: 11px;
+      background: #e6f0f9;
+      color: #1e6f9f;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.05rem;
+      flex-shrink: 0;
+    }
+    .quick-action .qa-title { font-weight: 600; font-size: 0.92rem; color: #0f3b5e; }
+    .quick-action .qa-desc { font-size: 0.76rem; color: #64748b; margin-top: 0.1rem; }
+
+    /* ---------- RECENT SESSIONS ---------- */
+    .recent-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      padding: 0.85rem 1rem;
+      border-radius: 14px;
+      border: 1px solid #e9eef3;
+      background: #fbfdff;
+      transition: 0.12s;
+      cursor: pointer;
+    }
+    .recent-item:hover { background: white; border-color: #b9d1e4; box-shadow: 0 6px 16px rgba(0, 30, 60, 0.05); }
+    .recent-item .ri-date {
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      background: #e6f0f9;
+      color: #1e6f9f;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .recent-item .ri-day { font-size: 1.1rem; font-weight: 700; }
+    .recent-item .ri-month { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .recent-item .ri-body { flex: 1; min-width: 0; }
+    .recent-item .ri-class { font-weight: 600; font-size: 0.92rem; color: #0f3b5e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .recent-item .ri-meta { font-size: 0.76rem; color: #64748b; margin-top: 0.1rem; display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .recent-item .ri-counts { display: flex; gap: 0.35rem; flex-shrink: 0; }
+
+    .empty-state {
+      text-align: center;
+      padding: 2.2rem 1rem;
+      color: #64748b;
+    }
+    .empty-state i { font-size: 2.2rem; color: #b8c9d9; margin-bottom: 0.7rem; display: block; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ---------- TWO-COLUMN LAYOUT ---------- */
+    .dash-columns {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 980px) {
+      .dash-columns { grid-template-columns: 1fr; }
+    }
+
+    /* ---------- MOBILE NAV ---------- */
+    .mobile-nav {
+      display: none;
+      background: white;
+      border-top: 1px solid #e2e8f0;
+      position: fixed;
+      bottom: 0; left: 0; width: 100%;
+      z-index: 30;
+      padding: 0.5rem 0.3rem;
+      justify-content: space-around;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
+    }
+    .mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.65rem;
+      color: #64748b;
+      padding: 0.3rem 0.2rem;
+      border-radius: 12px;
+      gap: 0.2rem;
+      text-decoration: none;
+    }
+    .mobile-nav-item i { font-size: 1.2rem; }
+    .mobile-nav-item.active { color: #1e6f9f; font-weight: 600; }
+
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f3b5e;
+      color: white;
+      padding: 0.7rem 1.4rem;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+      box-shadow: 0 8px 24px rgba(0, 20, 40, 0.2);
+      text-align: center;
+      max-width: 90vw;
+    }
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main-content { padding: 1.2rem 1rem 5rem 1rem; }
+      .mobile-nav { display: flex; }
+      h2 { font-size: 1.5rem; }
+      .welcome-banner { padding: 1.4rem 1.3rem; }
+      .welcome-banner .wb-title { font-size: 1.35rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.7rem; }
+      .stat-card .stat-number { font-size: 1.5rem; }
+    }
+    @media (max-width: 420px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR (links) -->
+<aside class="sidebar">
+  <h1><i class="fas fa-clipboard-check"></i> AttendTrack</h1>
+  <a class="nav-item active" href="#" data-page="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a class="nav-item" href="classes.html" data-page="classes"><i class="fas fa-school"></i> Classes</a>
+  <a class="nav-item" href="attendance.html" data-page="takeAttendance"><i class="fas fa-user-check"></i> Take Attendance</a>
+  <a class="nav-item" href="record.html" data-page="records"><i class="fas fa-table"></i> Records</a>
+  <a class="nav-item" href="report.html" data-page="reports"><i class="fas fa-file-alt"></i> Reports</a>
+  
+  <div class="sync-status" id="syncStatusSidebar">
+    <i class="fas fa-circle-notch fa-spin"></i> <span>Connecting…</span>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+
+  <!-- Welcome banner -->
+  <div class="welcome-banner">
+    <div class="wb-text">
+      <div class="wb-greeting" id="greetingText">Welcome back</div>
+      <div class="wb-title" id="wbTitle">Attendance dashboard</div>
+      <div class="wb-sub" id="wbSub">Here's what's happening today.</div>
+    </div>
+    <div class="wb-actions">
+      <a class="btn btn-primary" href="attendance.html" data-page="takeAttendance"><i class="fas fa-user-check"></i> Take attendance</a>
+      <a class="btn" href="classes.html" data-page="classes"><i class="fas fa-plus"></i> Manage classes</a>
+    </div>
+  </div>
+
+  <!-- Stats grid -->
+  <div class="stats-grid">
+    <div class="stat-card classes">
+      <div class="stat-icon"><i class="fas fa-school"></i></div>
+      <div class="stat-label">Total classes</div>
+      <div class="stat-number" id="statClasses">0</div>
+      <div class="stat-sub" id="statClassesSub">No classes yet</div>
+    </div>
+
+    <div class="stat-card students">
+      <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+      <div class="stat-label">Total students</div>
+      <div class="stat-number" id="statStudents">0</div>
+      <div class="stat-sub" id="statStudentsSub">Across all classes</div>
+    </div>
+
+    <div class="stat-card present">
+      <div class="stat-icon"><i class="fas fa-check"></i></div>
+      <div class="stat-label">Present today</div>
+      <div class="stat-number" id="statPresent">0</div>
+      <div class="stat-sub" id="statPresentSub">No records yet</div>
+    </div>
+
+    <div class="stat-card absent">
+      <div class="stat-icon"><i class="fas fa-times"></i></div>
+      <div class="stat-label">Absent today</div>
+      <div class="stat-number" id="statAbsent">0</div>
+      <div class="stat-sub" id="statAbsentSub">No records yet</div>
+    </div>
+
+    <div class="stat-card rate">
+      <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+      <div class="stat-label">Attendance rate</div>
+      <div class="stat-number" id="statRate">—</div>
+      <div class="stat-sub" id="statRateSub">Today</div>
+      <div class="stat-ring">
+        <svg width="46" height="46" viewBox="0 0 46 46">
+          <circle class="ring-bg" cx="23" cy="23" r="19"></circle>
+          <circle class="ring-fg" id="rateRing" cx="23" cy="23" r="19" stroke-dasharray="0 119.38"></circle>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two-column layout -->
+  <div class="dash-columns">
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:0.8rem;">
+          <h3 style="margin-bottom:0;"><i class="fas fa-calendar-day"></i> Today's classes</h3>
+          <span class="badge badge-info" id="todayDateBadge">—</span>
+        </div>
+        <div id="todayClassesList">
+          <div class="empty-state" style="padding:1.2rem 0.5rem;">
+            <i class="fas fa-school"></i>
+            <p>No classes created yet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- MOBILE NAV (links) -->
+<nav class="mobile-nav">
+  <a class="mobile-nav-item active" href="#" data-page="dashboard"><i class="fas fa-chart-pie"></i> Home</a>
+  <a class="mobile-nav-item" href="classes.html" data-page="classes"><i class="fas fa-school"></i> Classes</a>
+  <a class="mobile-nav-item" href="attendance.html" data-page="takeAttendance"><i class="fas fa-user-check"></i> Attend</a>
+  <a class="mobile-nav-item" href="record.html" data-page="records"><i class="fas fa-table"></i> Records</a>
+  <a class="mobile-nav-item" href="report.html" data-page="settings"><i class="fas fa-file-alt"></i> Reports</a>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  // ============================================================
+  // FIREBASE
+  // ============================================================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import {
+    getDatabase, ref, set, onValue, get, remove
+  } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBV4mq7IO9ubmW6m1RIvbNRa1g9IVr25k8",
+    authDomain: "attendance-taker-ee32b.firebaseapp.com",
+    databaseURL: "https://attendance-taker-ee32b-default-rtdb.firebaseio.com",
+    projectId: "attendance-taker-ee32b",
+    storageBucket: "attendance-taker-ee32b.firebasestorage.app",
+    messagingSenderId: "22851789508",
+    appId: "1:22851789508:web:d2a3e773eb3a29b5385f91",
+    measurementId: "G-0P6QWMLB2G"
+  };
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  const state = {
+    classes: {},
+    attendance: {},
+    schoolName: 'My School',
+    pendingQueue: [],
+    syncStatus: 'connecting'
+  };
+
+  const LS_CLASSES = 'attendanceTracker_classes';
+  const LS_ATTENDANCE = 'attendanceTracker_attendance';
+  const LS_SETTINGS = 'attendanceTracker_settings';
+  const LS_QUEUE = 'attendanceTracker_queue';
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+  }
+
+  function todayISO() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function formatDatePretty(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    const dt = new Date(Number(y), Number(m) - 1, Number(d));
+    return dt.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  function formatShortDate(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return { day: d, month: new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(undefined, { month: 'short' }) };
+  }
+
+  function getGreeting() {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ============================================================
+  // LOCAL STORAGE + SYNC
+  // ============================================================
+  function loadLocal() {
+    try {
+      const c = localStorage.getItem(LS_CLASSES);
+      if (c) state.classes = JSON.parse(c);
+      const a = localStorage.getItem(LS_ATTENDANCE);
+      if (a) state.attendance = JSON.parse(a);
+      const s = localStorage.getItem(LS_SETTINGS);
+      if (s) {
+        const parsed = JSON.parse(s);
+        state.schoolName = parsed.schoolName || 'My School';
+      }
+      const q = localStorage.getItem(LS_QUEUE);
+      if (q) state.pendingQueue = JSON.parse(q);
+    } catch (e) { console.warn('Local parse error', e); }
+  }
+
+  function saveLocal() {
+    localStorage.setItem(LS_CLASSES, JSON.stringify(state.classes));
+    localStorage.setItem(LS_ATTENDANCE, JSON.stringify(state.attendance));
+    localStorage.setItem(LS_QUEUE, JSON.stringify(state.pendingQueue));
+  }
+
+  function addToQueue(path, data, action = 'set') {
+    state.pendingQueue.push({
+      id: 'q_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      path, data, action, timestamp: Date.now()
+    });
+    saveLocal();
+    updateSyncStatus('pending');
+    attemptSync();
+  }
+
+  async function attemptSync() {
+    if (!navigator.onLine) { updateSyncStatus('offline'); return; }
+    if (state.pendingQueue.length === 0) { updateSyncStatus('online'); return; }
+    updateSyncStatus('pending');
+    for (let i = 0; i < state.pendingQueue.length; i++) {
+      const item = state.pendingQueue[i];
+      try {
+        if (item.action === 'set') await set(ref(database, item.path), item.data);
+        else if (item.action === 'remove') await remove(ref(database, item.path));
+        state.pendingQueue.splice(i, 1);
+        i--;
+        saveLocal();
+      } catch (err) {
+        console.warn('Sync failed', err);
+        updateSyncStatus('error');
+        return;
+      }
+    }
+    updateSyncStatus('online');
+    saveLocal();
+  }
+
+  function updateSyncStatus(status) {
+    state.syncStatus = status;
+    const el = $('#syncStatusSidebar');
+    if (!el) return;
+    const map = {
+      online:    { icon: 'fa-cloud-upload-alt', text: 'Online · synced', cls: 'sync-online' },
+      offline:   { icon: 'fa-wifi', text: 'Offline — saved locally', cls: 'sync-offline' },
+      pending:   { icon: 'fa-spinner fa-pulse', text: 'Syncing…', cls: 'sync-pending' },
+      error:     { icon: 'fa-exclamation-triangle', text: 'Sync error — will retry', cls: 'sync-error' },
+      connecting:{ icon: 'fa-circle-notch fa-spin', text: 'Connecting…', cls: '' }
+    };
+    const m = map[status] || map.connecting;
+    el.innerHTML = `<i class="fas ${m.icon}"></i> <span>${m.text}</span>`;
+    el.className = 'sync-status ' + m.cls;
+  }
+
+  // ============================================================
+  // FIREBASE LISTENERS
+  // ============================================================
+  function listenClasses() {
+    onValue(ref(database, 'attendanceTracker/classes'), (snap) => {
+      if (snap.exists()) {
+        const remote = snap.val();
+        const merged = { ...state.classes };
+        Object.keys(remote).forEach(cid => {
+          const r = remote[cid];
+          const local = merged[cid] || {};
+          merged[cid] = {
+            ...local, ...r,
+            students: { ...(local.students || {}), ...(r.students || {}) }
+          };
+        });
+        state.classes = merged;
+        saveLocal();
+        renderDashboard();
+      }
+      updateSyncStatus('online');
+    }, (err) => { console.warn('classes listener', err); updateSyncStatus('offline'); });
+  }
+
+  function listenAttendance() {
+    onValue(ref(database, 'attendanceTracker/attendance'), (snap) => {
+      if (snap.exists()) {
+        state.attendance = snap.val();
+        saveLocal();
+        renderDashboard();
+      }
+      updateSyncStatus('online');
+    }, (err) => { console.warn('attendance listener', err); updateSyncStatus('offline'); });
+  }
+
+  function listenSettings() {
+    onValue(ref(database, 'attendanceTracker/settings'), (snap) => {
+      if (snap.exists()) {
+        const s = snap.val();
+        state.schoolName = s.schoolName || 'My School';
+        localStorage.setItem(LS_SETTINGS, JSON.stringify({ schoolName: state.schoolName }));
+        renderWelcome();
+      }
+    }, (err) => { console.warn('settings listener', err); });
+  }
+
+  async function loadRemoteInitial() {
+    try {
+      const cSnap = await get(ref(database, 'attendanceTracker/classes'));
+      if (cSnap.exists()) {
+        const remote = cSnap.val();
+        const merged = { ...state.classes };
+        Object.keys(remote).forEach(cid => {
+          const r = remote[cid];
+          const local = merged[cid] || {};
+          merged[cid] = {
+            ...local, ...r,
+            students: { ...(local.students || {}), ...(r.students || {}) }
+          };
+        });
+        state.classes = merged;
+      }
+      const aSnap = await get(ref(database, 'attendanceTracker/attendance'));
+      if (aSnap.exists()) state.attendance = aSnap.val();
+      const sSnap = await get(ref(database, 'attendanceTracker/settings'));
+      if (sSnap.exists()) {
+        const s = sSnap.val();
+        state.schoolName = s.schoolName || 'My School';
+      }
+      saveLocal();
+      renderDashboard();
+      updateSyncStatus('online');
+    } catch (err) {
+      console.warn('initial load failed', err);
+      updateSyncStatus('offline');
+    }
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function renderWelcome() {
+    const greeting = getGreeting();
+    $('#greetingText').textContent = greeting;
+    $('#wbTitle').textContent = state.schoolName ? `Welcome to ${state.schoolName}` : 'Attendance dashboard';
+    $('#wbSub').textContent = `It's ${formatDatePretty(todayISO())}.`;
+    $('#todayDateBadge').textContent = formatDatePretty(todayISO());
+  }
+
+  function renderStats() {
+    const classIds = Object.keys(state.classes);
+    const totalClasses = classIds.length;
+    let totalStudents = 0;
+    classIds.forEach(cid => {
+      totalStudents += Object.keys(state.classes[cid].students || {}).length;
+    });
+
+    // Today's present/absent
+    const today = todayISO();
+    let present = 0, absent = 0;
+    classIds.forEach(cid => {
+      const day = state.attendance[cid]?.[today] || {};
+      Object.values(day).forEach(rec => {
+        if (rec.status === 'present') present++;
+        else if (rec.status === 'absent') absent++;
+      });
+    });
+
+    const totalMarked = present + absent;
+    const rate = totalMarked ? Math.round((present / totalMarked) * 100) : 0;
+
+    $('#statClasses').textContent = totalClasses;
+    $('#statClassesSub').textContent = totalClasses === 0 ? 'No classes yet' : `${totalClasses} class${totalClasses === 1 ? '' : 'es'} configured`;
+
+    $('#statStudents').textContent = totalStudents;
+    $('#statStudentsSub').textContent = totalStudents === 0 ? 'Add students to get started' : `Across ${totalClasses} class${totalClasses === 1 ? '' : 'es'}`;
+
+    $('#statPresent').textContent = present;
+    $('#statPresentSub').textContent = totalMarked === 0 ? 'No records yet' : `of ${totalMarked} marked`;
+
+    $('#statAbsent').textContent = absent;
+    $('#statAbsentSub').textContent = totalMarked === 0 ? 'No records yet' : `of ${totalMarked} marked`;
+
+    $('#statRate').textContent = totalMarked ? rate + '%' : '—';
+    $('#statRateSub').textContent = totalMarked ? 'Today' : 'Awaiting records';
+
+    // Progress ring (r = 19, circumference = 2π*19 ≈ 119.38)
+    const circumference = 2 * Math.PI * 19;
+    const ring = $('#rateRing');
+    const offset = circumference - (rate / 100) * circumference;
+    ring.style.strokeDasharray = `${(rate / 100) * circumference} ${circumference}`;
+    ring.style.stroke = rate >= 75 ? '#0a7e4e' : rate >= 50 ? '#d97706' : '#b91c1c';
+  }
+
+  function renderRecentSessions() {
+    const container = $('#recentSessions');
+    // Collect all sessions across classes
+    const sessions = [];
+    Object.keys(state.attendance).forEach(cid => {
+      Object.keys(state.attendance[cid]).forEach(date => {
+        const records = state.attendance[cid][date] || {};
+        let p = 0, a = 0;
+        Object.values(records).forEach(r => {
+          if (r.status === 'present') p++;
+          else if (r.status === 'absent') a++;
+        });
+        sessions.push({ cid, date, present: p, absent: a, total: p + a });
+      });
+    });
+
+    if (sessions.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-inbox"></i>
+          <p>No attendance sessions yet. Start by taking attendance.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Sort newest first
+    sessions.sort((a, b) => b.date.localeCompare(a.date) || b.cid.localeCompare(a.cid));
+    const recent = sessions.slice(0, 5);
+    
+    // Click -> go to records (in a full app)
+    $$('.recent-item').forEach(item => {
+      item.addEventListener('click', () => {
+        toast('Opening records…');
+      });
+    });
+  }
+
+  function renderTodayClasses() {
+    const container = $('#todayClassesList');
+    const today = todayISO();
+    const classIds = Object.keys(state.classes);
+
+    if (classIds.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding:1.2rem 0.5rem;">
+          <i class="fas fa-school"></i>
+          <p>No classes created yet.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Sort by class name
+    classIds.sort((a, b) => {
+      const an = state.classes[a]?.name || '';
+      const bn = state.classes[b]?.name || '';
+      return an.localeCompare(bn);
+    });
+
+    container.innerHTML = classIds.map(cid => {
+      const c = state.classes[cid];
+      const label = [c.name, c.section].filter(Boolean).join(' · ');
+      const todayRecs = state.attendance[cid]?.[today] || {};
+      const totalStudents = Object.keys(c.students || {}).length;
+      const marked = Object.keys(todayRecs).length;
+      const done = marked >= totalStudents && totalStudents > 0;
+      const statusBadge = done
+        ? '<span class="badge badge-present"><i class="fas fa-check"></i> Complete</span>'
+        : marked > 0
+          ? `<span class="badge badge-info"><i class="fas fa-hourglass-half"></i> ${marked}/${totalStudents}</span>`
+          : '<span class="badge badge-unmarked">Not started</span>';
+      return `
+        <div class="flex-between" style="padding:0.6rem 0; border-bottom:1px solid #eef2f6;">
+          <div style="min-width:0; flex:1;">
+            <div style="font-weight:600; font-size:0.9rem; color:#0f3b5e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(label)}</div>
+            <div class="text-muted" style="font-size:0.76rem;">${totalStudents} student${totalStudents === 1 ? '' : 's'}</div>
+          </div>
+          <div>${statusBadge}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderDashboard() {
+    renderWelcome();
+    renderStats();
+    renderRecentSessions();
+    renderTodayClasses();
+  }
+
+
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  loadLocal();
+  renderDashboard();
+  updateSyncStatus(navigator.onLine ? 'connecting' : 'offline');
+
+  listenClasses();
+  listenAttendance();
+  listenSettings();
+  loadRemoteInitial();
+
+  window.addEventListener('online', () => attemptSync());
+  window.addEventListener('offline', () => updateSyncStatus('offline'));
+</script>
+</body>
+</html>
