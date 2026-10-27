@@ -1,0 +1,20 @@
+
+{
+  "name": "Attendance Tracker",
+  "short_name": "Attendance",
+  "description": "A simple attendance tracker for managing multiple classes, students, and attendance records.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B1F4D",
+  "theme_color": "#0B1F4D",
+  "icons": [
+    {
+      "src": "Image/Icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
